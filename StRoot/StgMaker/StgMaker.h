@@ -20,7 +20,10 @@ public:
   StgMaker();
   ~StgMaker(){ /* nada */ };
 
-  int Init();
+  int  Init();
+  int  Make();
+  void Clear( const Option_t* opts="" );
+
 
   
 };
