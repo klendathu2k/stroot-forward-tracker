@@ -250,7 +250,7 @@ namespace jdb{
 		static double binWidth( vector<double> &bins, unsigned int binIndex = 0 ){
 
 			if ( binIndex >= bins.size() ){
-				ERROR( "HistoBins", "Bin Index " << binIndex << " out of range ( 0, " << bins.size() << " )" );
+			  //ERROR( "HistoBins", "Bin Index " << binIndex << " out of range ( 0, " << bins.size() << " )" );
 				return 0.0;
 			}
 			return (bins[ binIndex + 1 ] - bins[ binIndex ]);
@@ -416,7 +416,7 @@ namespace jdb{
 		void linspace( XmlConfig &_c, string _path = "" ){
 			vector<double> ls = _c.getDoubleVector( _path );
 			if ( ls.size() == 3 ){
-				INFOC( "LinSpace (" << ls[0] << ", " << ls[1] << ", " << ls[2] <<" )" );
+			  //INFOC( "LinSpace (" << ls[0] << ", " << ls[1] << ", " << ls[2] <<" )" );
 				bins = makeNBins( ls[2], ls[0], ls[1] );
 				min = ls[0];
 				max = ls[1];
@@ -431,7 +431,7 @@ namespace jdb{
 		void arange( XmlConfig &_c, string _path = "" ){
 			vector<double> ls = _c.getDoubleVector( _path );
 			if ( ls.size() == 3 ){
-				INFOC( "arange (" << ls[0] << ", " << ls[1] << ", " << ls[2] <<" )" );
+			  //INFOC( "arange (" << ls[0] << ", " << ls[1] << ", " << ls[2] <<" )" );
 				bins = makeFixedWidthBins( ls[2], ls[0], ls[1] );
 				min = ls[ 0 ];
 				max = ls[ 1 ];
