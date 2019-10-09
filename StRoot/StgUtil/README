@@ -1,0 +1,21 @@
+StgUtil imports the "utiltiy" classes from Daniel's forward tracker.
+The following changes have been made to make it compile...
+
+1) XmlConfig
+
+   Removed the string ts( size_t i, int len = -1 ) method, as 
+   has the same signature as ts (unsigned int i, int len = -1 ).
+
+2) Removed dependency on Tracker/loguru.h, use instead XmlConfig/loguru.h
+
+3) Removed the dependency between KiTrack and the concrete FwdHit class.
+
+   This removes the histogramming functionality for the time being.
+
+   Strongly recommend that the hits (as IHit*) be passed to the 
+   histogramming facility, and that the required logic be evaluated
+   external to these utility classes.
+
+
+
+    
