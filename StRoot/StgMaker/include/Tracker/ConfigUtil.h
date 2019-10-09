@@ -4,6 +4,7 @@
 #include "XmlConfig.h"
 #include "TString.h"
 
+namespace jdb {
 template <>
 TString XmlConfig::get<TString>( string path ) const {
     TString r( getString( path ) );
@@ -17,5 +18,5 @@ TString XmlConfig::get<TString>( string path, TString dv ) const {
     TString r( getString( path ) );
     return r;
 }
-
+}
 #endif
