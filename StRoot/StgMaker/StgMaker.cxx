@@ -120,7 +120,6 @@ int StgMaker::Make() {
     
   }
 
-  
   // Add hits onto the hit loader
   int count = 0;
   for ( auto h : event->rndHitCollection()->hits() ) { // TODO: exend RnD hit collection w/ begin/end
@@ -140,10 +139,9 @@ int StgMaker::Make() {
     hitMap[ hit->getSector() ].push_back(hit);
 
     // Add hit pointer to the track
-    mcTrackMap[ track_id ]->addHit( hit );
+    if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
     
   }
-
 
   // Process single event
   mForwardTracker -> doEvent();
