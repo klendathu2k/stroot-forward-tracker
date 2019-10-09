@@ -75,6 +75,12 @@ namespace KiTrack {
 		void setConfigFile( std::string cf ){
 			configFile = cf;
 		}
+
+	  // Adopt external configuration file
+	  void setConfig( XmlConfig& _cfg ) { cfg = _cfg; }
+	  // Adopt external hit loader
+	  void setLoader( IHitLoader* loader ){ hitLoader = loader; }
+
 		void init(){
 			LOG_SCOPE_FUNCTION(INFO);
 
@@ -197,6 +203,7 @@ namespace KiTrack {
 			return n;
 		}
 
+	  // this is the main event loop.  doEvent processes a single event iEvent...
 		void make(){
 
 			int single_event = cfg.get<int>( "Input:event", -1 );
@@ -261,6 +268,13 @@ namespace KiTrack {
 
 
 		void doEvent( unsigned long long int iEvent = 0 ) {
+
+		  // Moved cleanup to the start of doEvent, so that the fit results
+		  // persist after the call		  
+			recoTracks.clear();
+			fitMoms.clear();
+			fitStatus.clear();
+
 			LOG_SCOPE_FUNCTION(INFO);
 			LOG_F( INFO, "/******************************EVENT START ********************************/" );
 			LOG_F( INFO, "iEvent = %llu", iEvent );
@@ -302,9 +316,9 @@ namespace KiTrack {
 
 			
 			qPlotter->summarizeEvent( recoTracks, mcTrackMap, fitMoms, fitStatus );
-			recoTracks.clear();
-			fitMoms.clear();
-			fitStatus.clear();
+
+
+			
 		} // doEvent
 
 
