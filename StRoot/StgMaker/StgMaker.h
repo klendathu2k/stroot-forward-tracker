@@ -10,6 +10,8 @@
 class ForwardTracker;
 class ForwardHitLoader;
 
+class StRnDHitCollection;
+
 class StgMaker : public StMaker {
 
   ClassDef(StgMaker,0);
