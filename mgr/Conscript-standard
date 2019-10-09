@@ -722,7 +722,14 @@ if ( $pkg !~ /^sim$/ && $pkg !~ /^gen$/ ) {
 
         #print "DEBUG ".join(" ",@srcL)."\n";
 
+    } elsif ( $pkg =~ m/StgMaker/ ) {
 
+	$CPPPATH .=  $main::PATH_SEPARATOR . "#StRoot/StgMaker/include";
+	$CPPPATH .=  $main::PATH_SEPARATOR . "#StRoot/StgUtil/include";
+	$CPPPATH .=  $main::PATH_SEPARATOR . "#StRoot/StgUtil";
+	$CPPPATH .=  $main::PATH_SEPARATOR . "#StRoot/StgUtil/XmlConfig";
+	# TODO: install GenFit  (optstar anyone?) and point to reasonable path
+	$CPPPATH .=  $main::PATH_SEPARATOR . "#/star/simu/simu/jwebb/2019/10-09-2019-forward-tracker-integration/GenFit/include";
 
     } elsif ( $pkg =~ m/^StHbtMaker$/ ) {
 	$CPPPATH = "#" . $Dir;
