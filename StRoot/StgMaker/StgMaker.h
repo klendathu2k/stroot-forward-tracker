@@ -7,6 +7,9 @@
 #include "StgUtil/XmlConfig/XmlConfig.h"
 #endif
 
+class ForwardTracker;
+class ForwardHitLoader;
+
 class StgMaker : public StMaker {
 
   ClassDef(StgMaker,0);
@@ -24,7 +27,13 @@ public:
   int  Make();
   void Clear( const Option_t* opts="" );
 
+private:
+protected:
 
+#ifndef __CINT__
+  ForwardTracker* mForwardTracker;
+  ForwardHitLoader*      mForwardHitLoader;
+#endif
   
 };
 
