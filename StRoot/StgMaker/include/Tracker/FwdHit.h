@@ -31,7 +31,7 @@ namespace KiTrack {
 		int _ndisks;
 		std::string getInfoOnSector( int sec ) const { return "TODO"; }
 	};
-	extern KiTrack::FwdSystem *gFwdSystem;
+       KiTrack::FwdSystem *gFwdSystem;
 	//_____________________________________________________________________________________________
 
 
