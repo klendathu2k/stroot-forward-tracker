@@ -23,7 +23,6 @@ Which you can run using
 
  > $ root4star -q -b StRoot/StgMaker/macros/testg.C
 
-
 ### FAQ:
 
 - Q: What is rcas?
