@@ -73,9 +73,9 @@ int StgMaker::Init() {
   LOG_INFO << _xmlconfig.dump().c_str() << endm;
 
   // Initialize debugging
-  int argc=0;
-  char* argv[]={0};
-  loguru::init(argc, argv);
+  // int argc=1;
+  // char* argv[]={"StgMaker",""}; // deprecated, g++ warns...
+  // loguru::init(argc, argv );
   loguru::add_file("everything.log", loguru::Truncate, loguru::Verbosity_2);
   loguru::g_stderr_verbosity = 1;  
   
