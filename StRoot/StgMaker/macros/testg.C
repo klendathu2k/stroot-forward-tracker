@@ -2,7 +2,7 @@ void testg() {
 
   gROOT->LoadMacro("bfc.C");
   bfc(0,"fzin agml makeevent sdt20181215","testg.fzd");
-  gSystem->Load("../GenFit/lib/libgenfit2.so");
+  gSystem->Load("/star/simu/simu/jwebb/2019/10-09-2019-forward-tracker-integration/GenFit/lib/libgenfit2.so"); 
   gSystem->Load("StgUtil.so");
   gSystem->Load("StgMaker.so");
   
