@@ -7,10 +7,13 @@
 #include "StRnDHit.h"
 
 #include "tables/St_g2t_track_Table.h"
+#include "tables/St_g2t_fts_hit_Table.h"
 
 #define LOGURU_IMPLEMENTATION 1
 #include "Tracker/FwdTracker.h"
 #include "Tracker/FwdHit.h"
+
+#define __MC_HITS__
 
 //  Wrapper class around the forward tracker
 class ForwardTracker : public KiTrack::ForwardTrackMaker { 
@@ -120,8 +123,9 @@ int StgMaker::Make() {
     
   }
 
-  // Add hits onto the hit loader
+  // Add hits onto the hit loader (from rndHitCollection)
   int count = 0;
+#ifndef __MC_HITS__
   for ( auto h : event->rndHitCollection()->hits() ) { // TODO: exend RnD hit collection w/ begin/end
 
     int volume_id = h->layer(); // MC volume ID [not positive about this mapping]
@@ -142,6 +146,52 @@ int StgMaker::Make() {
     if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
     
   }
+#else
+  //
+  // Use geant hits directly
+  //
+  St_g2t_fts_hit* g2t_stg_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_stg_hit");
+  St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
+  int nstg = g2t_stg_hits->GetNRows();
+  int nfsi = g2t_fsi_hits->GetNRows();
+  for ( int i=0;i<nstg;i++ ) {  
+
+    g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_stg_hits->At(i); if (0==git) continue; // geant hit
+    int   track_id  = git->track_p;
+    int   volume_id = git->volume_id;
+    float x         = git->x[0];
+    float y         = git->x[1];
+    float z         = git->x[2];
+
+    KiTrack::FwdHit* hit = new KiTrack::FwdHit(count++, x, y, z, volume_id, track_id, mcTrackMap[track_id] );
+
+    // Add the hit to the hit map
+    hitMap[ hit->getSector() ].push_back(hit);
+
+    // Add hit pointer to the track
+    if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
+  
+  }
+  for ( int i=0;i<nfsi;i++ ) {  
+
+    g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_fsi_hits->At(i); if (0==git) continue; // geant hit
+    int   track_id  = git->track_p;
+    int   volume_id = git->volume_id;
+    float x         = git->x[0];
+    float y         = git->x[1];
+    float z         = git->x[2];
+
+    KiTrack::FwdHit* hit = new KiTrack::FwdHit(count++, x, y, z, volume_id, track_id, mcTrackMap[track_id] );
+
+    // Add the hit to the hit map
+    hitMap[ hit->getSector() ].push_back(hit);
+
+    // Add hit pointer to the track
+    if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
+  
+  }
+
+#endif  
 
   // Process single event
   mForwardTracker -> doEvent();
