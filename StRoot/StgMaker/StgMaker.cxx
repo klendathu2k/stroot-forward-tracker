@@ -13,8 +13,6 @@
 #include "Tracker/FwdTracker.h"
 #include "Tracker/FwdHit.h"
 
-#define __MC_HITS__
-
 //  Wrapper class around the forward tracker
 class ForwardTracker : public KiTrack::ForwardTrackMaker { 
   
@@ -125,7 +123,8 @@ int StgMaker::Make() {
 
   // Add hits onto the hit loader (from rndHitCollection)
   int count = 0;
-#ifndef __MC_HITS__
+
+#if 0
   for ( auto h : event->rndHitCollection()->hits() ) { // TODO: exend RnD hit collection w/ begin/end
 
     int volume_id = h->layer(); // MC volume ID [not positive about this mapping]
@@ -170,7 +169,7 @@ int StgMaker::Make() {
 
     // Add hit pointer to the track
     if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
-  
+   
   }
   for ( int i=0;i<nfsi;i++ ) {  
 
