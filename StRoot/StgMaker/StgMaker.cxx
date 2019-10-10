@@ -15,13 +15,12 @@
 
 //  Wrapper class around the forward tracker
 class ForwardTracker : public KiTrack::ForwardTrackMaker { 
-  
+public:
   // Replaces original initialization.  Config file and hitloader
   // will be provided by the maker.
   void initialize(){  
     LOG_INFO << "ForwardTracker::initialize()" << endm;
     nEvents = 1; // only process single event
-
 
     // Create the forward system...
     KiTrack::gFwdSystem = new KiTrack::FwdSystem( 7 );    
@@ -88,6 +87,9 @@ int StgMaker::Init() {
 
   mForwardHitLoader = new ForwardHitLoader();
   mForwardTracker->setLoader( mForwardHitLoader );
+
+
+  mForwardTracker->initialize();
 
   return kStOK;
 };
