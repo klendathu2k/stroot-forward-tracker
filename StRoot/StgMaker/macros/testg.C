@@ -1,7 +1,7 @@
 void testg() {
 
   gROOT->LoadMacro("bfc.C");
-  bfc(0,"fzin sdt20181215","testg.fzd");
+  bfc(0,"fzin event sdt20181215","testg.fzd");
   gSystem->Load("../GenFit/lib/libgenfit2.so");
   gSystem->Load("StgUtil.so");
   gSystem->Load("StgMaker.so");
