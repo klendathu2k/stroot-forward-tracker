@@ -8,7 +8,7 @@ void testg() {
   
   StgMaker *gmk = new StgMaker();
 
-
   chain->Init();
+  chain->Make(); 
 
 }
