@@ -12,6 +12,36 @@
 #define LOGURU_IMPLEMENTATION 1
 #include "Tracker/FwdTracker.h"
 #include "Tracker/FwdHit.h"
+#include "Tracker/TrackFitter.h"
+
+#include "StarMagField.h"
+
+//_______________________________________________________________________________________
+// Adaptor for STAR magnetic field
+class StarFieldAdaptor : public genfit::AbsBField { 
+public:
+  StarFieldAdaptor() {
+    _gField = this; // global pointer in TrackFitter.h
+  };
+  virtual TVector3 get(const TVector3& position) const {
+    double x[] = { position[0], position[1], position[2] };
+    double B[] = { 0, 0, 0 };
+    if (  StarMagField::Instance() )    StarMagField::Instance()->Field( x, B );
+    return TVector3( B );
+  };  
+  virtual void     get(const double& _x, const double& _y, const double& _z, double& Bx, double& By, double& Bz ) const {
+    double x[] = { _x, _y, _z };
+    double B[] = { 0, 0, 0 };
+    if (  StarMagField::Instance() ) StarMagField::Instance()->Field( x, B );
+    Bx = B[0];
+    By = B[1];
+    Bz = B[2];
+    return;
+  };
+};
+
+
+
 
 //  Wrapper class around the forward tracker
 class ForwardTracker : public KiTrack::ForwardTrackMaker { 
@@ -60,7 +90,7 @@ public:
 };
 
 //________________________________________________________________________
-StgMaker::StgMaker() : StMaker("stg"), mForwardTracker(0), mForwardHitLoader(0) {
+StgMaker::StgMaker() : StMaker("stg"), mForwardTracker(0), mForwardHitLoader(0), mFieldAdaptor(new StarFieldAdaptor()) {
 
 };
 //________________________________________________________________________
@@ -162,7 +192,7 @@ int StgMaker::Make() {
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_stg_hits->At(i); if (0==git) continue; // geant hit
     int   track_id  = git->track_p;
     int   volume_id = git->volume_id;
-    int   plane_id  = volume_id / 4 + 9; // four chambers/station, offset by 9 for reasons
+    int   plane_id  = volume_id / 4 ;//+ 9; // four chambers/station, offset by 9 for reasons
     float x         = git->x[0];
     float y         = git->x[1];
     float z         = git->x[2];

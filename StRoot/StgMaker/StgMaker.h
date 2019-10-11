@@ -9,6 +9,7 @@
 
 class ForwardTracker;
 class ForwardHitLoader;
+class StarFieldAdaptor;
 
 class StRnDHitCollection;
 
@@ -33,8 +34,9 @@ private:
 protected:
 
 #ifndef __CINT__
-  ForwardTracker* mForwardTracker;
+  ForwardTracker*        mForwardTracker;
   ForwardHitLoader*      mForwardHitLoader;
+  StarFieldAdaptor*      mFieldAdaptor;
 #endif
   
 };

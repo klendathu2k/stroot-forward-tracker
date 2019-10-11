@@ -41,6 +41,9 @@
 #include "TRandom.h"
 #include "TRandom3.h"
 
+// hack of a global field pointer
+genfit::AbsBField* _gField = 0;
+
 class TrackFitter {
 
 	public:
@@ -54,15 +57,20 @@ class TrackFitter {
 
 		// TODO : Load the STAR MagField
 		genfit::AbsBField * bField = nullptr;
-		if ( cfg.get<bool>( "TrackFitter:constB", true ) ){
-			bField = new genfit::ConstField(0. ,0., 5.);
-			LOG_F( INFO, "Using a CONST B FIELD" );
-		} else {
-			bField = new genfit::STARFieldXYZ();
-			LOG_F( INFO, "Using STAR B FIELD" );
+		if ( 0==_gField ) {
+		  if ( cfg.get<bool>( "TrackFitter:constB", false ) ){
+		    bField = new genfit::ConstField(0. ,0., 5.);
+		    LOG_F( INFO, "Using a CONST B FIELD" );
+		  } else {
+		    bField = new genfit::STARFieldXYZ();
+		    LOG_F( INFO, "Using STAR B FIELD" );
+		  }
+		}
+		else {
+		  bField = _gField;
 		}
 		genfit::FieldManager::getInstance()->init( bField ); // 0.5 T Bz
-
+		  
 		makeDisplay = make_display;
 		if ( make_display )
 			display = genfit::EventDisplay::getInstance();
