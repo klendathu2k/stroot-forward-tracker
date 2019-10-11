@@ -4,15 +4,15 @@
 	<!-- url to TTree with simulated hits and tracks -->
 	<!-- <Input url="SimHitsTuple_100track_0p2_5.root" type="sim_mc" max-events="100" first-event="0" /> -->
 	<!-- <Input url="SimHitsTuple_5track_0p2_5_constBz_electrons.root" type="sim_mc" max-events="200" first-event="0" /> -->
-	<Input url="SimHitsTuple_200track_0p2_5_constBz_muons_wPt.root" type="sim_mc" max-events="2" first-event="0" />
-	<!-- <Input url="SimHitsTuple_1track_0p2_5.root" type="sim_mc" max-events="200" first-event="0" /> -->
+	<!-- <Input url="SimHitsTuple_200track_0p2_5_constBz_muons_wPt.root" type="sim_mc" max-events="2" first-event="0" /> -->
+	<Input url="SimHitsTuple_1track_0p2_5.root" type="sim_mc" max-events="200" first-event="0" si="false" />
 		
 
-	<TrackFinder nIterations="2">
+	<TrackFinder nIterations="1">
 		<Iteration> <!-- Options for first iteration -->
 			<SegmentBuilder>
-				<Criteria name="Crit2_RZRatio" min="0.99" max="1.01" />
-				<Criteria name="Crit2_DeltaPhi" min="0" max="1" />	
+				<Criteria name="Crit2_RZRatio" min="0.9" max="1.11" />
+				<Criteria name="Crit2_DeltaPhi" min="0" max="10" />	
 				<Criteria name="Crit2_DeltaRho" min="-5" max="20"/>
 				<Criteria name="Crit2_StraightTrackRatio" min="0.9" max="1.1"/>
 			</SegmentBuilder>
@@ -77,6 +77,13 @@
 		</HitRemover>
 
 	</TrackFinder>
+
+	<TrackFitter constB="true" display="false">
+		<Vertex sigmaXY="0.01" sigmaZ="1" includeInFit="false" />
+		
+		<!-- for MC only -->
+		<Hits sigmaXY="0.1" useFCM="true" />
+	</TrackFitter>
 
 	<!-- SegmentBuilder Criteria 
 		These criteria are used for the Segment Building 
