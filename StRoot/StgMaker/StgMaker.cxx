@@ -27,6 +27,7 @@ public:
 
     // make our quality plotter
     qPlotter = new QualityPlotter( cfg );
+    LOG_INFO << "Booking histograms for nIterations=" << cfg.get<size_t>( "TrackFinder:nIterations", 1 ) << endm;
     qPlotter->makeHistograms( cfg.get<size_t>( "TrackFinder:nIterations", 1 ) );
 
     // initialize the track fitter
@@ -161,13 +162,14 @@ int StgMaker::Make() {
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_stg_hits->At(i); if (0==git) continue; // geant hit
     int   track_id  = git->track_p;
     int   volume_id = git->volume_id;
+    int   plane_id  = volume_id / 4 + 9; // four chambers/station, offset by 9 for reasons
     float x         = git->x[0];
     float y         = git->x[1];
     float z         = git->x[2];
 
-    LOG_INFO << "track_id=" << track_id << " volume_id=" << volume_id << " x/y/z " << x << "/" << y << "/" << z << endm;
+    LOG_INFO << "track_id=" << track_id << " volume_id=" << volume_id << " plane_id=" << plane_id << " x/y/z " << x << "/" << y << "/" << z << endm;
 
-    KiTrack::FwdHit* hit = new KiTrack::FwdHit(count++, x, y, z, volume_id, track_id, mcTrackMap[track_id] );
+    KiTrack::FwdHit* hit = new KiTrack::FwdHit(count++, x, y, z, -plane_id, track_id, mcTrackMap[track_id] );
 
     // Add the hit to the hit map
     hitMap[ hit->getSector() ].push_back(hit);
@@ -176,11 +178,12 @@ int StgMaker::Make() {
     if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
    
   }
-  for ( int i=0;i<nfsi;i++ ) {  
+  for ( int i=0;i< -nfsi;i++ ) {   // yes, negative... because are skipping Si in initial tests
 
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_fsi_hits->At(i); if (0==git) continue; // geant hit
     int   track_id  = git->track_p;
     int   volume_id = git->volume_id;
+    int   plane_id  = volume_id;
     float x         = git->x[0];
     float y         = git->x[1];
     float z         = git->x[2];
