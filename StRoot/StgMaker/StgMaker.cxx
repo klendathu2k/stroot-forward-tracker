@@ -155,6 +155,7 @@ int StgMaker::Make() {
   St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
   int nstg = g2t_stg_hits->GetNRows();
   int nfsi = g2t_fsi_hits->GetNRows();
+  LOG_INFO << "nstg = " << nstg << endm;
   for ( int i=0;i<nstg;i++ ) {  
 
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_stg_hits->At(i); if (0==git) continue; // geant hit
@@ -163,6 +164,8 @@ int StgMaker::Make() {
     float x         = git->x[0];
     float y         = git->x[1];
     float z         = git->x[2];
+
+    LOG_INFO << "track_id=" << track_id << " volume_id=" << volume_id << " x/y/z " << x << "/" << y << "/" << z << endm;
 
     KiTrack::FwdHit* hit = new KiTrack::FwdHit(count++, x, y, z, volume_id, track_id, mcTrackMap[track_id] );
 
@@ -181,6 +184,8 @@ int StgMaker::Make() {
     float x         = git->x[0];
     float y         = git->x[1];
     float z         = git->x[2];
+
+    LOG_INFO << "track_id=" << track_id << " volume_id=" << volume_id << " x/y/z " << x << "/" << y << "/" << z << endm;
 
     KiTrack::FwdHit* hit = new KiTrack::FwdHit(count++, x, y, z, volume_id, track_id, mcTrackMap[track_id] );
 
