@@ -105,7 +105,7 @@ public:
 
 
 		hist["McHitMap"] = new TH1F( "McHitMap", ";VID", 15, 0, 15 );
-		for ( size_t i = 0; i < 7; i++ ){
+		for ( size_t i = 0; i < 15; i++ ){// hack to prevent crash...
 			string n = "McHitMapLayer" + to_string( i );
 			hist[n] = new TH2F( n.c_str(), ("Layer " + to_string(i) + ";x;y").c_str(), 200, 100, 100, 200, 100, 100 );
 		}

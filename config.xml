@@ -66,7 +66,7 @@
 
 		<Connector distance="1"/>
 
-		<SubsetNN active="true" min-hits-on-track="7" >
+		<SubsetNN active="true" min-hits-on-track="4" >
 			<!-- <InitialTemp>2.1</InitialTemp> -->
 			<!-- <InfTemp>0.1</InfTemp> -->
 			<Omega>0.99</Omega>
@@ -75,6 +75,7 @@
 
 		<HitRemover active="true">
 		</HitRemover>
+
 	</TrackFinder>
 
 	<!-- SegmentBuilder Criteria 
