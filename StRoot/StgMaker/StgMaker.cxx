@@ -162,7 +162,7 @@ int StgMaker::Make() {
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_stg_hits->At(i); if (0==git) continue; // geant hit
     int   track_id  = git->track_p;
     int   volume_id = git->volume_id;
-    int   plane_id  = volume_id / 4 + 9; // four chambers/station, offset by 9 for reasons
+    int   plane_id  = volume_id / 4 ;//+ 9; // four chambers/station, offset by 9 for reasons
     float x         = git->x[0];
     float y         = git->x[1];
     float z         = git->x[2];
