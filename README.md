@@ -17,7 +17,7 @@ and build the code:
 
 Next, you'll want to setup a quick and dirty test simulation--
 
- > $ starsim -w 0 -b StRoot/StgMaker/macros/testg.kumac
+ > $ starsim -w 0 -b StRoot/StgMaker/macros/testg.kumac nevents=10 ntrack=1 etamn=3.4 etamx=3.5 ptmn=4.9 ptmx=5.0
 
 Which you can run using
 
