@@ -126,7 +126,7 @@ int StgMaker::Init() {
 };
 //________________________________________________________________________
 int StgMaker::Make() {
-
+  
   StEvent* event = static_cast<StEvent*>(GetInputDS("StEvent"));
   if ( 0==event ) {
     LOG_INFO << "No event, punt on forward tracking." << endm;
@@ -136,7 +136,7 @@ int StgMaker::Make() {
   // I am a horrible person for doing this by reference, but at least
   // I don't use "goto" anywhere.
   std::map<int, shared_ptr<KiTrack::McTrack> >& mcTrackMap = mForwardHitLoader->_mctracks;
-  std::map<int, std::vector<KiTrack::IHit*> >&  hitMap     = mForwardHitLoader->_hits;
+  std::map<int, std::vector<KiTrack::IHit*> >&  hitMap = mForwardHitLoader->_hits;
 
   // Get geant tracks
   St_g2t_track *g2t_track = (St_g2t_track *) GetDataSet("geant/g2t_track"); //  if (!g2t_track)    return kStWarn;
@@ -150,7 +150,7 @@ int StgMaker::Make() {
     float phi = atan2(track->p[1], track->p[0]); //track->phi;
     int   q   = track->charge;
     if ( 0 == mcTrackMap[ track_id ] ) // should always happen
-      mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );
+     mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );
     
   }
 
@@ -183,9 +183,11 @@ int StgMaker::Make() {
   // Use geant hits directly
   //
   St_g2t_fts_hit* g2t_stg_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_stg_hit");
-  St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
+  if ( g2t_stg_hits == nullptr ){
+    LOG_INFO << "g2t_stg_hits is null" << endm;
+    return kStErr;
+  }
   int nstg = g2t_stg_hits->GetNRows();
-  int nfsi = g2t_fsi_hits->GetNRows();
   LOG_INFO << "nstg = " << nstg << endm;
   for ( int i=0;i<nstg;i++ ) {  
 
@@ -208,6 +210,15 @@ int StgMaker::Make() {
     if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
    
   }
+
+
+  St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
+  if ( g2t_fsi_hits == nullptr){
+    LOG_INFO << "g2t_fsi_hits is null" << endm;
+    return kStErr;
+  }
+
+  int nfsi = g2t_fsi_hits->GetNRows();
   for ( int i=0;i< -nfsi;i++ ) {   // yes, negative... because are skipping Si in initial tests
 
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_fsi_hits->At(i); if (0==git) continue; // geant hit
@@ -241,6 +252,6 @@ int StgMaker::Make() {
 }
 //________________________________________________________________________
 void StgMaker::Clear( const Option_t* opts ) {
-  mForwardHitLoader->clear();
+  // mForwardHitLoader->clear();
 }
 //________________________________________________________________________
