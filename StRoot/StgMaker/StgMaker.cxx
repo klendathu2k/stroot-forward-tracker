@@ -15,6 +15,7 @@
 #include "Tracker/TrackFitter.h"
 
 #include "StarMagField.h"
+#include "TRandom.h"
 
 //_______________________________________________________________________________________
 // Adaptor for STAR magnetic field
@@ -195,7 +196,7 @@ int StgMaker::Make() {
     int   track_id  = git->track_p;
     int   volume_id = git->volume_id;
     int   plane_id  = volume_id / 4 ;//+ 9; // four chambers/station, offset by 9 for reasons
-    float x         = git->x[0];
+    float x         = git->x[0] + 0.001 * gRandom->Gaus();
     float y         = git->x[1];
     float z         = git->x[2];
 
