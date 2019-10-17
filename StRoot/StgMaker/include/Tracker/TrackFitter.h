@@ -67,6 +67,7 @@ class TrackFitter {
 		  }
 		}
 		else {
+		  LOG_F( INFO, "Using StarMagField interface" );
 		  bField = _gField;
 		}
 		genfit::FieldManager::getInstance()->init( bField ); // 0.5 T Bz
