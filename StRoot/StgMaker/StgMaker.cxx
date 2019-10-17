@@ -246,6 +246,44 @@ int StgMaker::Make() {
   // Process single event
   mForwardTracker -> doEvent();
 
+
+  const auto& reco_tracks = mForwardTracker -> getRecoTracks();
+  const auto& fit_momenta = mForwardTracker -> getFitMomenta();
+  const auto& fit_status  = mForwardTracker-> getFitStatus();
+
+  assert ( reco_tracks.size() == fit_momenta.size() );
+  assert ( reco_tracks.size() == fit_status.size() );
+
+  int tcount = 0;
+  for ( auto seed : reco_tracks ) {
+
+    const TVector3&          fitmom  = fit_momenta[tcount];
+    const genfit::FitStatus& fitstat = fit_status[tcount];
+    
+    LOG_INFO << "------------------------------------------------------------" << endm;
+    LOG_INFO << "Reconstructed track " << tcount << endm;
+    LOG_INFO << "N hits = " << seed.size() << endm;
+    int hcount = 0;
+    for ( auto hit : seed ) {
+      KiTrack::FwdHit* fwdhit = (KiTrack::FwdHit*)hit;
+      LOG_INFO << "  hit " << hcount++ 
+	       << " track_id=" << fwdhit->_tid
+	       << " volume_id=" << fwdhit->_vid
+	       << endm;
+    }
+    LOG_INFO << "Momentum: " << fitmom[0] << " " << fitmom[1] << " " << fitmom[2] << " | pT=" << fitmom.Perp() << endm;
+    LOG_INFO << "Status: " << endm;
+    fitstat.Print();
+
+    tcount++;
+  }
+
+
+  
+  // Get reco tracks, their momenta and fit status
+
+  
+
   // TODO: Hang tracks on StEvent
 
   return kStOK;
