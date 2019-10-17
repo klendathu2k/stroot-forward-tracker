@@ -15,6 +15,7 @@
 #include "Tracker/TrackFitter.h"
 
 #include "StarMagField.h"
+#include "TRandom.h"
 
 //_______________________________________________________________________________________
 // Adaptor for STAR magnetic field
@@ -126,7 +127,7 @@ int StgMaker::Init() {
 };
 //________________________________________________________________________
 int StgMaker::Make() {
-
+  
   StEvent* event = static_cast<StEvent*>(GetInputDS("StEvent"));
   if ( 0==event ) {
     LOG_INFO << "No event, punt on forward tracking." << endm;
@@ -136,7 +137,7 @@ int StgMaker::Make() {
   // I am a horrible person for doing this by reference, but at least
   // I don't use "goto" anywhere.
   std::map<int, shared_ptr<KiTrack::McTrack> >& mcTrackMap = mForwardHitLoader->_mctracks;
-  std::map<int, std::vector<KiTrack::IHit*> >&  hitMap     = mForwardHitLoader->_hits;
+  std::map<int, std::vector<KiTrack::IHit*> >&  hitMap = mForwardHitLoader->_hits;
 
   // Get geant tracks
   St_g2t_track *g2t_track = (St_g2t_track *) GetDataSet("geant/g2t_track"); //  if (!g2t_track)    return kStWarn;
@@ -150,7 +151,7 @@ int StgMaker::Make() {
     float phi = atan2(track->p[1], track->p[0]); //track->phi;
     int   q   = track->charge;
     if ( 0 == mcTrackMap[ track_id ] ) // should always happen
-      mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );
+     mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );
     
   }
 
@@ -183,9 +184,11 @@ int StgMaker::Make() {
   // Use geant hits directly
   //
   St_g2t_fts_hit* g2t_stg_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_stg_hit");
-  St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
+  if ( g2t_stg_hits == nullptr ){
+    LOG_INFO << "g2t_stg_hits is null" << endm;
+    return kStErr;
+  }
   int nstg = g2t_stg_hits->GetNRows();
-  int nfsi = g2t_fsi_hits->GetNRows();
   LOG_INFO << "nstg = " << nstg << endm;
   for ( int i=0;i<nstg;i++ ) {  
 
@@ -193,7 +196,7 @@ int StgMaker::Make() {
     int   track_id  = git->track_p;
     int   volume_id = git->volume_id;
     int   plane_id  = volume_id / 4 ;//+ 9; // four chambers/station, offset by 9 for reasons
-    float x         = git->x[0];
+    float x         = git->x[0] + 0.001 * gRandom->Gaus();
     float y         = git->x[1];
     float z         = git->x[2];
 
@@ -208,6 +211,15 @@ int StgMaker::Make() {
     if ( mcTrackMap[ track_id ] )    mcTrackMap[ track_id ]->addHit( hit );
    
   }
+
+
+  St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
+  if ( g2t_fsi_hits == nullptr){
+    LOG_INFO << "g2t_fsi_hits is null" << endm;
+    return kStErr;
+  }
+
+  int nfsi = g2t_fsi_hits->GetNRows();
   for ( int i=0;i< -nfsi;i++ ) {   // yes, negative... because are skipping Si in initial tests
 
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_fsi_hits->At(i); if (0==git) continue; // geant hit
@@ -235,12 +247,50 @@ int StgMaker::Make() {
   // Process single event
   mForwardTracker -> doEvent();
 
+
+  const auto& reco_tracks = mForwardTracker -> getRecoTracks();
+  const auto& fit_momenta = mForwardTracker -> getFitMomenta();
+  const auto& fit_status  = mForwardTracker-> getFitStatus();
+
+  assert ( reco_tracks.size() == fit_momenta.size() );
+  assert ( reco_tracks.size() == fit_status.size() );
+
+  int tcount = 0;
+  for ( auto seed : reco_tracks ) {
+
+    const TVector3&          fitmom  = fit_momenta[tcount];
+    const genfit::FitStatus& fitstat = fit_status[tcount];
+    
+    LOG_INFO << "------------------------------------------------------------" << endm;
+    LOG_INFO << "Reconstructed track " << tcount << endm;
+    LOG_INFO << "N hits = " << seed.size() << endm;
+    int hcount = 0;
+    for ( auto hit : seed ) {
+      KiTrack::FwdHit* fwdhit = (KiTrack::FwdHit*)hit;
+      LOG_INFO << "  hit " << hcount++ 
+	       << " track_id=" << fwdhit->_tid
+	       << " volume_id=" << fwdhit->_vid
+	       << endm;
+    }
+    LOG_INFO << "Momentum: " << fitmom[0] << " " << fitmom[1] << " " << fitmom[2] << " | pT=" << fitmom.Perp() << endm;
+    LOG_INFO << "Status: " << endm;
+    fitstat.Print();
+
+    tcount++;
+  }
+
+
+  
+  // Get reco tracks, their momenta and fit status
+
+  
+
   // TODO: Hang tracks on StEvent
 
   return kStOK;
 }
 //________________________________________________________________________
 void StgMaker::Clear( const Option_t* opts ) {
-  mForwardHitLoader->clear();
+  // mForwardHitLoader->clear();
 }
 //________________________________________________________________________

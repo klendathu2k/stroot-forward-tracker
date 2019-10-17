@@ -565,6 +565,12 @@ namespace KiTrack {
 		IHitLoader *hitLoader;
 
 		TrackFitter * trackFitter = nullptr;
+
+	public:
+	  const std::vector<Seed_t>& getRecoTracks() const { return recoTracks; }
+	  const std::vector<TVector3>& getFitMomenta() const { return fitMoms; }
+	  const std::vector<genfit::FitStatus>& getFitStatus() const { return fitStatus; }
+	  
 	};
 
 

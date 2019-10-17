@@ -78,7 +78,7 @@ class TrackFitter {
 		// init the fitter
 		fitter = new genfit::KalmanFitterRefTrack( );
 		// fitter = new genfit::KalmanFitter( );
-		// fitter->setMaxIterations(20);
+		fitter->setMaxIterations(2);
 
 		// track representation
 		// pion_track_rep = 
@@ -423,6 +423,8 @@ class TrackFitter {
 	TVector3 fitTrack( vector<KiTrack::IHit *> trackCand ) {
 		LOG_SCOPE_FUNCTION(INFO);
 
+		LOG_F( INFO, "Track candidate size: %lu", trackCand.size() );
+
 		// The PV information, if we want to use it
 		TVectorD pv(3);
 		pv[0] = vertexPos[0] + rand->Gaus( 0, vertexSigmaXY );
@@ -476,10 +478,10 @@ class TrackFitter {
 		 *******************************************************************************************************************************/
 		for ( auto h : trackCand ){	
 			
-			if ( skipSi0 == true && h->getSector() == 0 ) continue;
-			if ( skipSi1 == true && h->getSector() == 1 ) continue;
+			// if ( skipSi0 == true && h->getSector() == 0 ) continue;
+			// if ( skipSi1 == true && h->getSector() == 1 ) continue;
 
-			if ( static_cast<KiTrack::FwdHit*>(h)->_vid == 9 ) continue;
+			// if ( static_cast<KiTrack::FwdHit*>(h)->_vid == 9 ) continue;
 			// if ( static_cast<KiTrack::FwdHit*>(h)->_vid == 10 ) continue;
 			// if ( static_cast<KiTrack::FwdHit*>(h)->_vid == 11 ) continue;
 
@@ -531,7 +533,8 @@ class TrackFitter {
 			auto cardinalStatus = fitTrack.getFitStatus(cardinalRep);
 			fStatus = *cardinalStatus; // save the status of last fit
 
-			if ( fitTrack.getFitStatus(trackRepPos)->isFitConverged() == false && fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false ){
+			if ( fitTrack.getFitStatus(trackRepPos)->isFitConverged() == false && 
+			     fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false ){
 				LOG_F( INFO, "*********************FIT SUMMARY*********************" );
 				LOG_F( ERROR, "Track Fit failed to converge" );
 				LOG_F( INFO, "SeedMom( pT=%0.2f, eta=%0.2f, phi=%0.2f )", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() );
