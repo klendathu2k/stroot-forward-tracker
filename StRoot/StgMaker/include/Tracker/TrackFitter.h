@@ -533,7 +533,8 @@ class TrackFitter {
 			auto cardinalStatus = fitTrack.getFitStatus(cardinalRep);
 			fStatus = *cardinalStatus; // save the status of last fit
 
-			if ( fitTrack.getFitStatus(trackRepPos)->isFitConverged() == false && fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false ){
+			if ( fitTrack.getFitStatus(trackRepPos)->isFitConverged() == false && 
+			     fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false ){
 				LOG_F( INFO, "*********************FIT SUMMARY*********************" );
 				LOG_F( ERROR, "Track Fit failed to converge" );
 				LOG_F( INFO, "SeedMom( pT=%0.2f, eta=%0.2f, phi=%0.2f )", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() );
