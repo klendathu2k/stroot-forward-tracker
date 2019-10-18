@@ -24,8 +24,9 @@ void testg() {
   StgMaker *gmk = new StgMaker();
   gmk->Init();
 
-  for ( int i=0;i<10; i++ ) {
+  int stat = 0; 
+  while (stat==0) {
     chain->Clear();
-    chain->Make(); 
+stat =    chain->Make(); 
   }
 }
