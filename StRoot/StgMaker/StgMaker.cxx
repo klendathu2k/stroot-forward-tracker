@@ -127,6 +127,12 @@ int StgMaker::Init() {
 };
 //________________________________________________________________________
 int StgMaker::Make() {
+
+  const double z_fst[]  = { 93.3, 140.0, 186.6 };
+  const double z_stgc[] = { 280.9, 303.7, 326.6, 349.4 };
+  const double z_wcal[] = { 711.0 };
+  const double z_hcal[] = { 740.0 }; // TODO: get correct value
+  
   
   StEvent* event = static_cast<StEvent*>(GetInputDS("StEvent"));
   if ( 0==event ) {
@@ -249,7 +255,9 @@ int StgMaker::Make() {
 
   const auto& reco_tracks = mForwardTracker -> getRecoTracks();
   const auto& fit_momenta = mForwardTracker -> getFitMomenta();
-  const auto& fit_status  = mForwardTracker-> getFitStatus();
+  const auto& fit_status  = mForwardTracker -> getFitStatus();
+  const auto& global_reps = mForwardTracker -> globalTrackReps();
+  const auto& global_tracks = mForwardTracker -> globalTracks();
 
   assert ( reco_tracks.size() == fit_momenta.size() );
   assert ( reco_tracks.size() == fit_status.size() );
@@ -274,6 +282,13 @@ int StgMaker::Make() {
     LOG_INFO << "Momentum: " << fitmom[0] << " " << fitmom[1] << " " << fitmom[2] << " | pT=" << fitmom.Perp() << endm;
     LOG_INFO << "Status: " << endm;
     fitstat.Print();
+
+    // Get the global track rep
+    const auto* rep = global_reps[tcount];
+    const auto* track = global_tracks[tcount];
+    track->Print();
+
+    
 
     tcount++;
   }

@@ -48,6 +48,8 @@ class TrackFitter {
 
 	public:
 	TrackFitter( XmlConfig &_cfg ) : cfg(_cfg){
+	  fTrackRep = 0;
+	  fTrack    = 0;
 	}
 
 	void setup( bool make_display = false ){
@@ -454,9 +456,12 @@ class TrackFitter {
 			seedPos.SetXYZ( pv[0], pv[1], pv[2] );
 		}
 
+		if ( fTrack ) delete fTrack;
 
-		genfit::Track fitTrack(trackRepPos, seedPos, seedMom);
-		fitTrack.addTrackRep( trackRepNeg );
+		fTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
+		fTrack->addTrackRep( trackRepNeg );
+
+		genfit::Track& fitTrack = *fTrack;
 
 		const int detId(0); // detector ID
 		int planeId(0); // detector plane ID
@@ -541,7 +546,13 @@ class TrackFitter {
 
 			auto cardinalRep = fitTrack.getCardinalRep();
 			auto cardinalStatus = fitTrack.getFitStatus(cardinalRep);
-			fStatus = *cardinalStatus; // save the status of last fit
+			fStatus   = *cardinalStatus; // save the status of last fit
+
+			// Delete any previous track rep
+			if ( fTrackRep ) delete fTrackRep;
+
+			// Clone the cardinal rep for persistency
+			fTrackRep = cardinalRep->clone(); // save the result of the fit
 
 			if ( fitTrack.getFitStatus(trackRepPos)->isFitConverged() == false && 
 			     fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false ){
@@ -617,9 +628,9 @@ class TrackFitter {
 		return (int)_q;
 	}
 
-	genfit::FitStatus getStatus(){
-		return fStatus;
-	}
+	genfit::FitStatus    getStatus()  { return fStatus;   }
+        genfit::AbsTrackRep* getTrackRep(){ return fTrackRep; }
+        genfit::Track*       getTrack()   { return fTrack; }
 
 
 	private:
@@ -653,8 +664,9 @@ class TrackFitter {
 	bool skipSi0 = false;
 	bool skipSi1 = false;
 
-	genfit::FitStatus fStatus;
-
+	genfit::FitStatus    fStatus;
+        genfit::AbsTrackRep* fTrackRep;
+        genfit::Track*       fTrack;
 
 	// Fit results
 	TVector3 _p;
