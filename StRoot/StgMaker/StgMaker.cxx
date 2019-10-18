@@ -141,7 +141,7 @@ int StgMaker::Make() {
 
   // Get geant tracks
   St_g2t_track *g2t_track = (St_g2t_track *) GetDataSet("geant/g2t_track"); //  if (!g2t_track)    return kStWarn;
-  for ( int irow=0; irow<g2t_track->GetNRows();irow++ ) {
+  if ( g2t_track ) for ( int irow=0; irow<g2t_track->GetNRows();irow++ ) {
     g2t_track_st* track = (g2t_track_st *)g2t_track->At(irow);
     if ( 0==track ) continue;
     int track_id = track->id;
@@ -151,8 +151,7 @@ int StgMaker::Make() {
     float phi = atan2(track->p[1], track->p[0]); //track->phi;
     int   q   = track->charge;
     if ( 0 == mcTrackMap[ track_id ] ) // should always happen
-     mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );
-    
+     mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );    
   }
 
   // Add hits onto the hit loader (from rndHitCollection)
