@@ -54,7 +54,8 @@ class TrackFitter {
 		new TGeoManager("Geometry", "Geane geometry");
 		TGeoManager::Import( cfg.get<string>( "Geometry", "fGeom.root" ).c_str() );
 		genfit::MaterialEffects::getInstance()->init(new genfit::TGeoMaterialInterface());
-
+		//		genfit::MaterialEffects::getInstance()->setDebugLvl(10); // setNoEffects(); // TEST
+		//		genfit::MaterialEffects::getInstance()->setNoEffects(); // TEST
 		// TODO : Load the STAR MagField
 		genfit::AbsBField * bField = nullptr;
 		if ( 0==_gField ) {
@@ -77,10 +78,10 @@ class TrackFitter {
 			display = genfit::EventDisplay::getInstance();
 
 		// init the fitter
-		fitter = new genfit::KalmanFitterRefTrack( );
-		// fitter = new genfit::KalmanFitter( );
-		fitter->setMaxIterations(2);
-
+		fitter = new genfit::KalmanFitterRefTrack( ); 
+		//	fitter = new genfit::KalmanFitter( );
+		fitter->setMaxIterations(2); 
+		//		fitter->setDebugLvl(10);
 		// track representation
 		// pion_track_rep = 
 
@@ -421,20 +422,28 @@ class TrackFitter {
 
 	}
 
-	TVector3 fitTrack( vector<KiTrack::IHit *> trackCand ) {
+        TVector3 fitTrack( vector<KiTrack::IHit *> trackCand, double *Vertex = 0 ) {
 		LOG_SCOPE_FUNCTION(INFO);
 
 		LOG_F( INFO, "Track candidate size: %lu", trackCand.size() );
 
 		// The PV information, if we want to use it
 		TVectorD pv(3);
-		pv[0] = vertexPos[0] + rand->Gaus( 0, vertexSigmaXY );
-		pv[1] = vertexPos[1] + rand->Gaus( 0, vertexSigmaXY );
-		pv[2] = vertexPos[2] + rand->Gaus( 0, vertexSigmaZ );
+		if ( 0==Vertex ) {
+		  pv[0] = vertexPos[0] + rand->Gaus( 0, vertexSigmaXY );
+		  pv[1] = vertexPos[1] + rand->Gaus( 0, vertexSigmaXY );
+		  pv[2] = vertexPos[2] + rand->Gaus( 0, vertexSigmaZ );
+		}
+		else {
+		  pv[0] = Vertex[0];
+		  pv[1] = Vertex[1];
+		  pv[2] = Vertex[2];
+		}
 			
 		// get the seed info from our hits
 		TVector3 seedMom, seedPos;
 		float curv = seedState( trackCand, seedPos, seedMom );
+		
 
 		// create the track representations
 		auto trackRepPos = new genfit::RKTrackRep(pdg_mu_plus);
