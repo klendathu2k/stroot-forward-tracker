@@ -471,7 +471,7 @@ void StgMaker::FillDetectorInfo(  StTrackDetectorInfo* info, genfit::Track* trac
 
     LOG_INFO << "x=" << x << " y=" << y << " z=" << z << " detId=" << detId << " hitId=" << hitId << endm;
 //     const TMatrixDSym& covariance = measurement->getRawHitCov();
-//     float ex = covariance(0,0);z
+//     float ex = covariance(0,0);
 //     float ey = covariance(1,1);
 //     float ez = covariance(2,2);
 //     // TODO: Replace with appropriate types for sTGC, silicon, etc...
