@@ -1,3 +1,9 @@
+
+#define LOGURU_IMPLEMENTATION 1
+#include "Tracker/FwdTracker.h"
+#include "Tracker/FwdHit.h"
+#include "Tracker/TrackFitter.h"
+
 #include "StgMaker.h"
 #include <map>
 #include <string>
@@ -9,13 +15,19 @@
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_fts_hit_Table.h"
 
-#define LOGURU_IMPLEMENTATION 1
-#include "Tracker/FwdTracker.h"
-#include "Tracker/FwdHit.h"
-#include "Tracker/TrackFitter.h"
 
 #include "StarMagField.h"
 #include "TRandom.h"
+
+#include "StEventUtilities/StEventHelper.h"
+
+#include "StTrackDetectorInfo.h"
+
+
+//_______________________________________________________________________________________
+// For now, accept anything we are passed, no matter what it is or how bad it is
+template<typename T> bool accept( T ){ return true; }
+
 
 //_______________________________________________________________________________________
 // Adaptor for STAR magnetic field
@@ -252,7 +264,10 @@ int StgMaker::Make() {
   // Process single event
   mForwardTracker -> doEvent();
 
+  // Now fill StEvent
+  FillEvent();
 
+#if 0
   const auto& reco_tracks = mForwardTracker -> getRecoTracks();
   const auto& fit_momenta = mForwardTracker -> getFitMomenta();
   const auto& fit_status  = mForwardTracker -> getFitStatus();
@@ -284,15 +299,13 @@ int StgMaker::Make() {
     fitstat.Print();
 
     // Get the global track rep
-    const auto* rep = global_reps[tcount];
+    const auto* rep   = global_reps[tcount];
     const auto* track = global_tracks[tcount];
-    track->Print();
 
-    
-
+   
     tcount++;
   }
-
+#endif
 
   
   // Get reco tracks, their momenta and fit status
@@ -306,5 +319,176 @@ int StgMaker::Make() {
 //________________________________________________________________________
 void StgMaker::Clear( const Option_t* opts ) {
   // mForwardHitLoader->clear();
+}
+//________________________________________________________________________
+void StgMaker::FillEvent() {
+
+  StEvent* event = static_cast<StEvent*>(GetInputDS("StEvent"));
+  assert(event); // we warned ya
+
+  LOG_INFO << "Filling StEvent w/ results from genfit tracker" << endm;
+
+  // Track seeds
+  const auto& seed_tracks = mForwardTracker -> getRecoTracks();
+  // Reconstructed globals
+  const auto& glob_tracks = mForwardTracker -> globalTracks();
+
+  // Clear up somethings... (but does this interfere w/ Sti and/or Stv?)
+  StEventHelper::Remove(event,"StSPtrVecTrackNode");
+  StEventHelper::Remove(event,"StSPtrVecPrimaryVertex");
+
+  LOG_INFO << "  number of tracks      = " << glob_tracks.size() << endm;
+  LOG_INFO << "  number of track seeds = " << seed_tracks.size() << endm;
+
+  auto& trackNodes         = event->trackNodes();
+  auto& trackDetectorInfos = event->trackDetectorInfo();
+
+  int track_count_total  = 0;
+  int track_count_accept = 0;
+  for ( auto* track : mForwardTracker->globalTracks() ) {
+
+    const auto& seed = seed_tracks[track_count_total];
+
+    track_count_total++;
+
+    if ( 0==accept(track) ) continue; 
+    track_count_accept++;
+
+    // Create a detector info object to be filled
+    StTrackDetectorInfo* detectorInfo = new StTrackDetectorInfo;
+    FillDetectorInfo( detectorInfo, track, true );
+
+    // // Create a new track node (on which we hang a global and, maybe, primary track)
+    // StTrackNode* trackNode = new StTrackNode;
+
+    // // This is our global track, to be filled from the genfit::Track object "track"
+    // StGlobalTrack* globalTrack = new StGlobalTrack;
+
+    // FillTrack( globalTrack, track, detectorInfo );
+
+    // // On successful fill (and I don't see why we wouldn't be) add detector info to the list
+    // detectorInfos.push_back( detectorInfo );    
+
+    // // Set relationships w/ tracker object and MC truth
+    // // globalTrack->setKey( key );
+    // // globalTrack->setIdTruth( idtruth, qatruth ); // StTrack is dominant contributor model
+
+    // // Add the track to its track node
+    // trackNode->addTrack( globalTrack );
+    // trackNodes.push_back( trackNode );
+
+    // NOTE: could we qcall here mForwardTracker->fitTrack( seed, vertex ) ?
+
+  } // end of loop over tracks
+
+  LOG_INFO << "  number accepted = " <<   track_count_accept << endm;
+  
+}
+//________________________________________________________________________
+// // void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, StTrackDetectorInfo* info )
+// // {
+
+// //   const double z_fst[]  = { 93.3, 140.0, 186.6 };
+// //   const double z_stgc[] = { 280.9, 303.7, 326.6, 349.4 };
+
+//   // otrack == output track
+//   // itrack == input track (genfit)
+
+//   // TODO: otrack->setEncodedMetheod( ... );
+//   // TODO: trackLength =
+//   //       otrack->setLength(trackLength);
+//   // TODO: nseeds = seed.size()
+//   //       otrack->setSeedQuality( nseeds );
+//   // TODO: set number of possible points
+//   // 
+//   // FillTrackGeometry( otrack, itrack, false ); // first plane
+//   // FillTrackGeometry( otrack, itrack, true  ); // last plane   
+//}
+// //________________________________________________________________________
+// void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* itrack, bool last ) {
+
+//   // NOTE:  In the sTGC region, the track is most certainly *not* a helix.  But we assume
+//   //        a helix model anyway.
+//   //
+//   //        In order that we have one reliable geometry, we will use the inner most
+//   //        silicon plane as the "inner" layer, regardless of whether it is used in
+//   //        the fit or not.
+
+ 
+//   // Evalueate track at the first Si disk
+//   if ( false == last ) {
+
+//   }
+//   // Evaluate track at the last sTGC plane
+//   else {
+//     const auto* point       = itrack->getPoints().back();
+//     const auto* measurement = point->getRawMeasurement();
+//     const TVectorD& xyzhit  = measurement->getRawMeasurement();
+
+//   }
+
+// }
+// //________________________________________________________________________
+void StgMaker::FillDetectorInfo(  StTrackDetectorInfo* info, genfit::Track* track, bool increment ) {
+
+  LOG_INFO << "  FillDetectorInfo" << endm;
+
+//   // here is where we would fill in
+//   // 1) total number of hits
+//   // 2) number of sTGC hits
+//   // 3) number of silicon hits
+//   // 4) an StHit for each hit fit to the track
+//   // 5) The position of the first and last hits on the track
+  
+  int ntotal   = track->getNumPoints(); // vs getNumPointsWithMeasurement() ?
+  int nstgc    = ntotal;
+  //  int nsilicon = ntotal - nstgc; // things that make the optimizer go hmm?
+
+  LOG_INFO << "  ntotal = " << ntotal << endm;  
+
+//   StRnDHit* hit = 0;
+  for ( const auto* point : track->getPoints() ) {
+    //    point->Print();
+
+    const auto* measurement = point->getRawMeasurement();
+    const TVectorD& xyz = measurement->getRawHitCoords();
+    float x = xyz[0];
+    float y = xyz[1];
+    float z = 0; // We get this from the detector plane...
+    
+    // Get fitter info for the cardinal representation
+    const auto* fitinfo = point->getFitterInfo();
+
+    const auto& plane = fitinfo->getPlane();
+    TVector3 normal = plane->getNormal();
+    const TVector3& origin = plane->getO();
+
+    int detId = measurement->getDetId();
+    int hitId = measurement->getHitId();
+
+
+    z = origin[2]; // test test test test
+
+    LOG_INFO << "x=" << x << " y=" << y << " z=" << z << " detId=" << detId << " hitId=" << hitId << endm;
+//     const TMatrixDSym& covariance = measurement->getRawHitCov();
+//     float ex = covariance(0,0);z
+//     float ey = covariance(1,1);
+//     float ez = covariance(2,2);
+//     // TODO: Replace with appropriate types for sTGC, silicon, etc...
+//     hit = new StRnDHit();
+//     hit->setPosition( {x,y,z} );
+//     hit->setPositionError( {ex,ey,ez} );
+//     // TODO: set covariance matrix
+//     // hit->
+
+ 
+//     hit->setId( hitId );
+//     // TODO: set detector ID
+//     // TODO: set MC truth
+//     info->addHit( hit, increment );
+  }
+
+//   // TODO: Add first and last point on the track
+  
 }
 //________________________________________________________________________

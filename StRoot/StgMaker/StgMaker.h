@@ -5,6 +5,7 @@
 
 #ifndef __CINT__
 #include "StgUtil/XmlConfig/XmlConfig.h"
+#include "Track.h"
 #endif
 
 class ForwardTracker;
@@ -12,6 +13,8 @@ class ForwardHitLoader;
 class StarFieldAdaptor;
 
 class StRnDHitCollection;
+class StTrack;
+class StTrackDetectorInfo;
 
 class StgMaker : public StMaker {
 
@@ -37,6 +40,12 @@ protected:
   ForwardTracker*        mForwardTracker;
   ForwardHitLoader*      mForwardHitLoader;
   StarFieldAdaptor*      mFieldAdaptor;
+
+  // Fill StEvent
+  void FillEvent();
+  void FillDetectorInfo( StTrackDetectorInfo* info, genfit::Track* track, bool increment );
+  // void FillTrack       ( StTrack*             otrack, genfit::Track* itrack, StTrackDetectorInfo* info );
+
 #endif
   
 };
