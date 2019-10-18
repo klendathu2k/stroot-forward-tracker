@@ -48,13 +48,16 @@ class TrackFitter {
 
 	public:
 	TrackFitter( XmlConfig &_cfg ) : cfg(_cfg){
+	  fTrackRep = 0;
+	  fTrack    = 0;
 	}
 
 	void setup( bool make_display = false ){
 		new TGeoManager("Geometry", "Geane geometry");
 		TGeoManager::Import( cfg.get<string>( "Geometry", "fGeom.root" ).c_str() );
 		genfit::MaterialEffects::getInstance()->init(new genfit::TGeoMaterialInterface());
-
+		//		genfit::MaterialEffects::getInstance()->setDebugLvl(10); // setNoEffects(); // TEST
+		//		genfit::MaterialEffects::getInstance()->setNoEffects(); // TEST
 		// TODO : Load the STAR MagField
 		genfit::AbsBField * bField = nullptr;
 		if ( 0==_gField ) {
@@ -67,6 +70,7 @@ class TrackFitter {
 		  }
 		}
 		else {
+		  LOG_F( INFO, "Using StarMagField interface" );
 		  bField = _gField;
 		}
 		genfit::FieldManager::getInstance()->init( bField ); // 0.5 T Bz
@@ -76,10 +80,10 @@ class TrackFitter {
 			display = genfit::EventDisplay::getInstance();
 
 		// init the fitter
-		fitter = new genfit::KalmanFitterRefTrack( );
-		// fitter = new genfit::KalmanFitter( );
-		fitter->setMaxIterations(2);
-
+		fitter = new genfit::KalmanFitterRefTrack( ); 
+		//	fitter = new genfit::KalmanFitter( );
+		fitter->setMaxIterations(2); 
+		//		fitter->setDebugLvl(10);
 		// track representation
 		// pion_track_rep = 
 
@@ -420,20 +424,28 @@ class TrackFitter {
 
 	}
 
-	TVector3 fitTrack( vector<KiTrack::IHit *> trackCand ) {
+        TVector3 fitTrack( vector<KiTrack::IHit *> trackCand, double *Vertex = 0 ) {
 		LOG_SCOPE_FUNCTION(INFO);
 
 		LOG_F( INFO, "Track candidate size: %lu", trackCand.size() );
 
 		// The PV information, if we want to use it
 		TVectorD pv(3);
-		pv[0] = vertexPos[0] + rand->Gaus( 0, vertexSigmaXY );
-		pv[1] = vertexPos[1] + rand->Gaus( 0, vertexSigmaXY );
-		pv[2] = vertexPos[2] + rand->Gaus( 0, vertexSigmaZ );
+		if ( 0==Vertex ) {
+		  pv[0] = vertexPos[0] + rand->Gaus( 0, vertexSigmaXY );
+		  pv[1] = vertexPos[1] + rand->Gaus( 0, vertexSigmaXY );
+		  pv[2] = vertexPos[2] + rand->Gaus( 0, vertexSigmaZ );
+		}
+		else {
+		  pv[0] = Vertex[0];
+		  pv[1] = Vertex[1];
+		  pv[2] = Vertex[2];
+		}
 			
 		// get the seed info from our hits
 		TVector3 seedMom, seedPos;
 		float curv = seedState( trackCand, seedPos, seedMom );
+		
 
 		// create the track representations
 		auto trackRepPos = new genfit::RKTrackRep(pdg_mu_plus);
@@ -444,9 +456,12 @@ class TrackFitter {
 			seedPos.SetXYZ( pv[0], pv[1], pv[2] );
 		}
 
+		if ( fTrack ) delete fTrack;
 
-		genfit::Track fitTrack(trackRepPos, seedPos, seedMom);
-		fitTrack.addTrackRep( trackRepNeg );
+		fTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
+		fTrack->addTrackRep( trackRepNeg );
+
+		genfit::Track& fitTrack = *fTrack;
 
 		const int detId(0); // detector ID
 		int planeId(0); // detector plane ID
@@ -531,7 +546,13 @@ class TrackFitter {
 
 			auto cardinalRep = fitTrack.getCardinalRep();
 			auto cardinalStatus = fitTrack.getFitStatus(cardinalRep);
-			fStatus = *cardinalStatus; // save the status of last fit
+			fStatus   = *cardinalStatus; // save the status of last fit
+
+			// Delete any previous track rep
+			if ( fTrackRep ) delete fTrackRep;
+
+			// Clone the cardinal rep for persistency
+			fTrackRep = cardinalRep->clone(); // save the result of the fit
 
 			if ( fitTrack.getFitStatus(trackRepPos)->isFitConverged() == false && 
 			     fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false ){
@@ -607,9 +628,9 @@ class TrackFitter {
 		return (int)_q;
 	}
 
-	genfit::FitStatus getStatus(){
-		return fStatus;
-	}
+	genfit::FitStatus    getStatus()  { return fStatus;   }
+        genfit::AbsTrackRep* getTrackRep(){ return fTrackRep; }
+        genfit::Track*       getTrack()   { return fTrack; }
 
 
 	private:
@@ -643,8 +664,9 @@ class TrackFitter {
 	bool skipSi0 = false;
 	bool skipSi1 = false;
 
-	genfit::FitStatus fStatus;
-
+	genfit::FitStatus    fStatus;
+        genfit::AbsTrackRep* fTrackRep;
+        genfit::Track*       fTrack;
 
 	// Fit results
 	TVector3 _p;

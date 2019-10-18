@@ -275,6 +275,14 @@ namespace KiTrack {
 			fitMoms.clear();
 			fitStatus.clear();
 
+			// Clear pointers to the track reps from previous event
+			for ( auto p : _globalTrackReps ) delete p;			
+			_globalTrackReps.clear();
+
+			// Clear pointers to global tracks
+			for ( auto p : _globalTracks ) delete p;
+			_globalTracks.clear();
+
 			LOG_SCOPE_FUNCTION(INFO);
 			LOG_F( INFO, "/******************************EVENT START ********************************/" );
 			LOG_F( INFO, "iEvent = %llu", iEvent );
@@ -300,9 +308,9 @@ namespace KiTrack {
 			if ( mcTrackFinding ){
 				doMcTrackFinding( mcTrackMap );
 				qPlotter->summarizeEvent( recoTracks, mcTrackMap, fitMoms, fitStatus );
-				recoTracks.clear();
-				fitMoms.clear();
-				fitStatus.clear();
+				//				recoTracks.clear();
+				//				fitMoms.clear();
+				//				fitStatus.clear();
 				// trackFitter->finishEvent();
 				return;
 			}
@@ -348,6 +356,10 @@ namespace KiTrack {
 				TVector3 p = trackFitter->fitTrack( t );
 				fitMoms.push_back(p);
 				fitStatus.push_back( trackFitter->getStatus() );
+				// Clone the track rep
+				_globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
+				genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
+				_globalTracks.push_back( mytrack );
 			}
 
 			qPlotter->afterIteration( 0, recoTracks );
@@ -485,6 +497,11 @@ namespace KiTrack {
 					TVector3 p = trackFitter->fitTrack( t );
 					fitMoms.push_back(p);
 					fitStatus.push_back( trackFitter->getStatus() );
+					// Clone the track rep
+					_globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
+					genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
+					_globalTracks.push_back( mytrack );
+
 				}
 
 				qPlotter->afterIteration( iIteration, acceptedTracks );
@@ -558,9 +575,12 @@ namespace KiTrack {
 		size_t nTrueTracksWith7;
 
 		std::vector<Seed_t> recoTracks; // the tracks recod from all iterations
-		vector<TVector3> fitMoms;
+	        std::vector<TVector3> fitMoms;
 		// vector<int> fitQs;
-		vector<genfit::FitStatus> fitStatus;
+                std::vector<genfit::FitStatus>     fitStatus;
+                std::vector<genfit::AbsTrackRep*> _globalTrackReps;
+                std::vector<genfit::Track*>       _globalTracks;
+
 		QualityPlotter *qPlotter;
 		IHitLoader *hitLoader;
 
@@ -570,6 +590,8 @@ namespace KiTrack {
 	  const std::vector<Seed_t>& getRecoTracks() const { return recoTracks; }
 	  const std::vector<TVector3>& getFitMomenta() const { return fitMoms; }
 	  const std::vector<genfit::FitStatus>& getFitStatus() const { return fitStatus; }
+	  const std::vector<genfit::AbsTrackRep*>& globalTrackReps() const { return _globalTrackReps; }
+	  const std::vector<genfit::Track*> &globalTracks() const { return _globalTracks; }
 	  
 	};
 

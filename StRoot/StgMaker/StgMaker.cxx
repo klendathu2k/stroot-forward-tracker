@@ -127,6 +127,12 @@ int StgMaker::Init() {
 };
 //________________________________________________________________________
 int StgMaker::Make() {
+
+  const double z_fst[]  = { 93.3, 140.0, 186.6 };
+  const double z_stgc[] = { 280.9, 303.7, 326.6, 349.4 };
+  const double z_wcal[] = { 711.0 };
+  const double z_hcal[] = { 740.0 }; // TODO: get correct value
+  
   
   StEvent* event = static_cast<StEvent*>(GetInputDS("StEvent"));
   if ( 0==event ) {
@@ -141,7 +147,7 @@ int StgMaker::Make() {
 
   // Get geant tracks
   St_g2t_track *g2t_track = (St_g2t_track *) GetDataSet("geant/g2t_track"); //  if (!g2t_track)    return kStWarn;
-  for ( int irow=0; irow<g2t_track->GetNRows();irow++ ) {
+  if ( g2t_track ) for ( int irow=0; irow<g2t_track->GetNRows();irow++ ) {
     g2t_track_st* track = (g2t_track_st *)g2t_track->At(irow);
     if ( 0==track ) continue;
     int track_id = track->id;
@@ -151,8 +157,7 @@ int StgMaker::Make() {
     float phi = atan2(track->p[1], track->p[0]); //track->phi;
     int   q   = track->charge;
     if ( 0 == mcTrackMap[ track_id ] ) // should always happen
-     mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );
-    
+     mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );    
   }
 
   // Add hits onto the hit loader (from rndHitCollection)
@@ -250,7 +255,9 @@ int StgMaker::Make() {
 
   const auto& reco_tracks = mForwardTracker -> getRecoTracks();
   const auto& fit_momenta = mForwardTracker -> getFitMomenta();
-  const auto& fit_status  = mForwardTracker-> getFitStatus();
+  const auto& fit_status  = mForwardTracker -> getFitStatus();
+  const auto& global_reps = mForwardTracker -> globalTrackReps();
+  const auto& global_tracks = mForwardTracker -> globalTracks();
 
   assert ( reco_tracks.size() == fit_momenta.size() );
   assert ( reco_tracks.size() == fit_status.size() );
@@ -275,6 +282,13 @@ int StgMaker::Make() {
     LOG_INFO << "Momentum: " << fitmom[0] << " " << fitmom[1] << " " << fitmom[2] << " | pT=" << fitmom.Perp() << endm;
     LOG_INFO << "Status: " << endm;
     fitstat.Print();
+
+    // Get the global track rep
+    const auto* rep = global_reps[tcount];
+    const auto* track = global_tracks[tcount];
+    track->Print();
+
+    
 
     tcount++;
   }
