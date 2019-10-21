@@ -4,6 +4,8 @@
 #include "Tracker/FwdHit.h"
 #include "Tracker/TrackFitter.h"
 
+#include "TMath.h"
+
 #include "StgMaker.h"
 #include <map>
 #include <string>
@@ -15,6 +17,8 @@
 #include "StTrackNode.h"
 #include "StGlobalTrack.h"
 #include "StPrimaryTrack.h"
+#include "StTrackGeometry.h"
+#include "StHelixModel.h"
 
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_fts_hit_Table.h"
@@ -481,16 +485,34 @@ void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* it
   // geometry (in the Silicon) but terrible in the outer geometry ( sTGC)
   double Bz = B[2];
 
+  // Temporary helix to get the helix parameters
   StPhysicalHelix helix( momentum, origin, Bz, charge );
+  // StiStEventFiller has this as |curv|. 
+  double curv = TMath::Abs(helix.curvature());
+  double h    = -TMath::Sign(charge*Bz, 1.0); // helicity
+  if ( charge==0 ) h = 1;
+  //
+  // From StHelix::helix()
+  //
+  // phase = mPsi - h*pi/2
+  // so...
+  // psi = phase + h*pi/2
+  //
+  double psi = helix.phase() + h * TMath::Pi() / 2;
+  double dip  = helix.dipAngle();
+  short  q    = charge; assert( q==1 || q==-1 || q==0 );
 
-  // double field  = 0;
-  // double charge = itrack->getCardinalRep()
+  // Create the track geometry
+  StTrackGeometry* geometry = new StHelixModel (q, psi, curv, dip, origin, momentum, h);
+
+
+  // TODO: check helix parameters... geometry->helix() should return an StPhysicalHelix... 
+  //       double check that we converted everthing correctly.
+
+
+  if ( kInnerGeometry == io ) otrack->setGeometry( geometry );
+  else                        otrack->setOuterGeometry( geometry );
   
-
-
-
-
-  // StTrackGeometry* geometry = new StHelixModel ( );
 
 }
 // //________________________________________________________________________
