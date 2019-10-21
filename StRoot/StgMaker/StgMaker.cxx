@@ -22,7 +22,7 @@
 #include "StEventUtilities/StEventHelper.h"
 
 #include "StTrackDetectorInfo.h"
-
+#include "StEvent/StEnumerations.h"
 
 //_______________________________________________________________________________________
 // For now, accept anything we are passed, no matter what it is or how bad it is
@@ -442,13 +442,14 @@ void StgMaker::FillDetectorInfo(  StTrackDetectorInfo* info, genfit::Track* trac
   
   int ntotal   = track->getNumPoints(); // vs getNumPointsWithMeasurement() ?
   int nstgc    = ntotal;
-  //  int nsilicon = ntotal - nstgc; // things that make the optimizer go hmm?
 
-  LOG_INFO << "  ntotal = " << ntotal << endm;  
+  float zmin =  9E9;
+  float zmax = -9E9;
 
-//   StRnDHit* hit = 0;
+  StThreeVectorF firstPoint(0,0,9E9);
+  StThreeVectorF lastPoint(0,0,-9E9);
+
   for ( const auto* point : track->getPoints() ) {
-    //    point->Print();
 
     const auto* measurement = point->getRawMeasurement();
     const TVectorD& xyz = measurement->getRawHitCoords();
@@ -463,32 +464,25 @@ void StgMaker::FillDetectorInfo(  StTrackDetectorInfo* info, genfit::Track* trac
     TVector3 normal = plane->getNormal();
     const TVector3& origin = plane->getO();
 
+    z = origin[2]; 
+    if ( z > lastPoint[2] ) {
+      lastPoint.setX(x);      lastPoint.setY(y);      lastPoint.setZ(z);
+    }
+    if ( z < firstPoint[2] ) {
+      firstPoint.setX(x);     firstPoint.setY(y);     firstPoint.setZ(z);
+    }
+    
     int detId = measurement->getDetId();
     int hitId = measurement->getHitId();
 
+    //TODO: Convert (or access) StHit and add to the track detector info
 
-    z = origin[2]; // test test test test
-
-    LOG_INFO << "x=" << x << " y=" << y << " z=" << z << " detId=" << detId << " hitId=" << hitId << endm;
-//     const TMatrixDSym& covariance = measurement->getRawHitCov();
-//     float ex = covariance(0,0);
-//     float ey = covariance(1,1);
-//     float ez = covariance(2,2);
-//     // TODO: Replace with appropriate types for sTGC, silicon, etc...
-//     hit = new StRnDHit();
-//     hit->setPosition( {x,y,z} );
-//     hit->setPositionError( {ex,ey,ez} );
-//     // TODO: set covariance matrix
-//     // hit->
-
- 
-//     hit->setId( hitId );
-//     // TODO: set detector ID
-//     // TODO: set MC truth
-//     info->addHit( hit, increment );
   }
 
-//   // TODO: Add first and last point on the track
-  
+  info -> setFirstPoint( firstPoint );
+  info -> setLastPoint( lastPoint );
+  info -> setNumberOfPoints( ntotal, kUnknownId ); // TODO: Assign 
+
+    
 }
 //________________________________________________________________________
