@@ -11,6 +11,10 @@
 #include "StEvent.h"
 #include "StRnDHitCollection.h"
 #include "StRnDHit.h"
+#include "StTrack.h"
+#include "StTrackNode.h"
+#include "StGlobalTrack.h"
+#include "StPrimaryTrack.h"
 
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_fts_hit_Table.h"
@@ -24,9 +28,16 @@
 #include "StTrackDetectorInfo.h"
 #include "StEvent/StEnumerations.h"
 
+#include "StarClassLibrary/StPhysicalHelix.hh"
+
 //_______________________________________________________________________________________
 // For now, accept anything we are passed, no matter what it is or how bad it is
 template<typename T> bool accept( T ){ return true; }
+
+template<> bool accept( genfit::Track* track ) {
+  if (track->getNumPoints() <= 0 ) return false; // fit may have failed
+  return true;
+};
 
 
 //_______________________________________________________________________________________
@@ -347,27 +358,31 @@ void StgMaker::FillEvent() {
   int track_count_accept = 0;
   for ( auto* track : mForwardTracker->globalTracks() ) {
 
+    // Get the track seed
     const auto& seed = seed_tracks[track_count_total];
 
+    // Increment total track count
     track_count_total++;
 
+    // Check to see if the track passes cuts (it should, for now)
     if ( 0==accept(track) ) continue; 
     track_count_accept++;
 
     // Create a detector info object to be filled
     StTrackDetectorInfo* detectorInfo = new StTrackDetectorInfo;
     FillDetectorInfo( detectorInfo, track, true );
+    
+    // Create a new track node (on which we hang a global and, maybe, primary track)
+    StTrackNode* trackNode = new StTrackNode;
 
-    // // Create a new track node (on which we hang a global and, maybe, primary track)
-    // StTrackNode* trackNode = new StTrackNode;
+    // This is our global track, to be filled from the genfit::Track object "track"
+    StGlobalTrack* globalTrack = new StGlobalTrack;
 
-    // // This is our global track, to be filled from the genfit::Track object "track"
-    // StGlobalTrack* globalTrack = new StGlobalTrack;
+    // Fill the track with the good stuff
+    FillTrack( globalTrack, track, seed, detectorInfo );   
 
-    // FillTrack( globalTrack, track, detectorInfo );
-
-    // // On successful fill (and I don't see why we wouldn't be) add detector info to the list
-    // detectorInfos.push_back( detectorInfo );    
+    // On successful fill (and I don't see why we wouldn't be) add detector info to the list
+    trackDetectorInfos.push_back( detectorInfo );    
 
     // // Set relationships w/ tracker object and MC truth
     // // globalTrack->setKey( key );
@@ -385,53 +400,101 @@ void StgMaker::FillEvent() {
   
 }
 //________________________________________________________________________
-// // void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, StTrackDetectorInfo* info )
-// // {
+void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, const Seed_t& iseed, StTrackDetectorInfo* info )
+{
+  const double z_fst[]  = { 93.3, 140.0, 186.6 };
+  const double z_stgc[] = { 280.9, 303.7, 326.6, 349.4 };
 
-// //   const double z_fst[]  = { 93.3, 140.0, 186.6 };
-// //   const double z_stgc[] = { 280.9, 303.7, 326.6, 349.4 };
+  // otrack == output track
+  // itrack == input track (genfit)
 
-//   // otrack == output track
-//   // itrack == input track (genfit)
+  otrack->setEncodedMethod(kUndefinedFitterId);
+  
+  // Track length and TOF between first and last point on the track
+  // TODO: is this same definition used in StEvent?
+  double track_len = itrack->getTrackLen();
+  //  double track_tof = itrack->getTrackTOF();
+  otrack->setLength( track_len );
 
-//   // TODO: otrack->setEncodedMetheod( ... );
-//   // TODO: trackLength =
-//   //       otrack->setLength(trackLength);
-//   // TODO: nseeds = seed.size()
-//   //       otrack->setSeedQuality( nseeds );
-//   // TODO: set number of possible points
-//   // 
-//   // FillTrackGeometry( otrack, itrack, false ); // first plane
-//   // FillTrackGeometry( otrack, itrack, true  ); // last plane   
-//}
+  // Get the so called track seed quality... the number of hits in the seed
+  int seed_qual = iseed.size();
+  otrack->setSeedQuality( seed_qual );
+
+  // Set number of possible points in each detector
+  // TODO: calcuate the number of possible points in each detector, for now set = 4
+  otrack->setNumberOfPossiblePoints( 4, kUnknownId );
+
+  // Fill the inner and outer geometries of the track.  For now,
+  // always propagate the track to the first layer of the silicon
+  // to fill the inner geometry.
+  //
+  // TODO: We may need to extend our "geometry" classes for RK parameters
+  FillTrackGeometry( otrack, itrack, z_fst [0], kInnerGeometry );
+  FillTrackGeometry( otrack, itrack, z_stgc[3], kOuterGeometry );
+  
+}
+
 // //________________________________________________________________________
-// void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* itrack, bool last ) {
+void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* itrack, double zplane, int io ) {
 
-//   // NOTE:  In the sTGC region, the track is most certainly *not* a helix.  But we assume
-//   //        a helix model anyway.
-//   //
-//   //        In order that we have one reliable geometry, we will use the inner most
-//   //        silicon plane as the "inner" layer, regardless of whether it is used in
-//   //        the fit or not.
+  
+  // Obtain fitted state 
+  genfit::MeasuredStateOnPlane measuredState = itrack->getFittedState(1);
 
- 
-//   // Evalueate track at the first Si disk
-//   if ( false == last ) {
+  // Obtain the cardinal representation
+  genfit::AbsTrackRep* cardinal =  itrack->getCardinalRep();
 
-//   }
-//   // Evaluate track at the last sTGC plane
-//   else {
-//     const auto* point       = itrack->getPoints().back();
-//     const auto* measurement = point->getRawMeasurement();
-//     const TVectorD& xyzhit  = measurement->getRawMeasurement();
+  // We really don't want the overhead in the TVector3 ctor/dtor here
+  static TVector3 xhat(1,0,0), yhat(0,1,0), Z(0,0,0);
 
-//   }
+  // Assign the z position
+  Z[2] = zplane;
 
-// }
+  // This is the plane for which we are evaluating the fit
+  const auto detectorPlane = genfit::SharedPlanePtr( new genfit::DetPlane(Z, xhat, yhat) );
+
+  // Update the state to the given plane
+  cardinal->extrapolateToPlane( measuredState, detectorPlane, false, true );
+
+  //  measuredState.Print();
+
+  static StThreeVector<double> momentum;
+  static StThreeVector<double> origin;  
+
+  static TVector3 pos;
+  static TVector3 mom;
+  static TMatrixDSym cov;
+
+  measuredState.getPosMomCov(pos, mom, cov);
+
+  for ( int i=0;i<3;i++ )  momentum[i] = mom[i];
+  for ( int i=0;i<3; i++ ) origin[i]   = pos[i];
+
+  double charge = measuredState.getCharge();
+
+  // Get magnetic field
+  double X[] = { pos[0], pos[1], pos[2] };
+  double B[] = { 0, 0, 0 };
+  StarMagField::Instance()->Field( X, B );
+
+  // This is really an approximation, should be good enough for the inner
+  // geometry (in the Silicon) but terrible in the outer geometry ( sTGC)
+  double Bz = B[2];
+
+  StPhysicalHelix helix( momentum, origin, Bz, charge );
+
+  // double field  = 0;
+  // double charge = itrack->getCardinalRep()
+  
+
+
+
+
+  // StTrackGeometry* geometry = new StHelixModel ( );
+
+}
 // //________________________________________________________________________
 void StgMaker::FillDetectorInfo(  StTrackDetectorInfo* info, genfit::Track* track, bool increment ) {
-
-  LOG_INFO << "  FillDetectorInfo" << endm;
 
 //   // here is where we would fill in
 //   // 1) total number of hits
@@ -449,6 +512,7 @@ void StgMaker::FillDetectorInfo(  StTrackDetectorInfo* info, genfit::Track* trac
   StThreeVectorF firstPoint(0,0,9E9);
   StThreeVectorF lastPoint(0,0,-9E9);
 
+  int count = 0;
   for ( const auto* point : track->getPoints() ) {
 
     const auto* measurement = point->getRawMeasurement();
@@ -475,9 +539,14 @@ void StgMaker::FillDetectorInfo(  StTrackDetectorInfo* info, genfit::Track* trac
     int detId = measurement->getDetId();
     int hitId = measurement->getHitId();
 
+    ++count;
+
     //TODO: Convert (or access) StHit and add to the track detector info
 
   }
+
+
+  assert(count);
 
   info -> setFirstPoint( firstPoint );
   info -> setLastPoint( lastPoint );

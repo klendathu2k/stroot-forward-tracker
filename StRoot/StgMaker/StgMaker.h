@@ -6,6 +6,11 @@
 #ifndef __CINT__
 #include "StgUtil/XmlConfig/XmlConfig.h"
 #include "Track.h"
+
+namespace KiTrack { 
+  class IHit;
+};
+
 #endif
 
 class ForwardTracker;
@@ -15,6 +20,8 @@ class StarFieldAdaptor;
 class StRnDHitCollection;
 class StTrack;
 class StTrackDetectorInfo;
+
+#include <vector>
 
 class StgMaker : public StMaker {
 
@@ -33,6 +40,8 @@ public:
   int  Make();
   void Clear( const Option_t* opts="" );
 
+  enum { kInnerGeometry,       kOuterGeometry };
+
 private:
 protected:
 
@@ -41,10 +50,13 @@ protected:
   ForwardHitLoader*      mForwardHitLoader;
   StarFieldAdaptor*      mFieldAdaptor;
 
+  using Seed_t = std::vector<KiTrack::IHit*>;
+
   // Fill StEvent
   void FillEvent();
-  void FillDetectorInfo( StTrackDetectorInfo* info, genfit::Track* track, bool increment );
-  // void FillTrack       ( StTrack*             otrack, genfit::Track* itrack, StTrackDetectorInfo* info );
+  void FillDetectorInfo ( StTrackDetectorInfo* info,   genfit::Track* track, bool increment );
+  void FillTrack        ( StTrack*             otrack, genfit::Track* itrack, const Seed_t& iseed, StTrackDetectorInfo* info );
+  void FillTrackGeometry( StTrack*             otrack, genfit::Track* itrack, double zplane, int io );
 
 #endif
   
