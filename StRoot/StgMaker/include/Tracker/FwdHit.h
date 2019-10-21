@@ -10,6 +10,8 @@
 #include <set>
 #include <memory>
 
+class StHit;
+
 namespace KiTrack {
 
 	
@@ -70,6 +72,7 @@ namespace KiTrack {
 			_tid = tid;
 			_vid = vid;
 			_mcTrack = mcTrack;
+			_hit = 0;
 
 			int _map[]={0,0,0,0,0,1,2, 0,0, 3, 4,  5, 6}; // ftsref6a
 			if ( vid > 0 )
@@ -93,6 +96,9 @@ namespace KiTrack {
 		int _vid;
 		unsigned int _id; // just a unique id for each hit in this event.
 		std::shared_ptr<McTrack> _mcTrack;
+
+	  StHit* _hit;
+	  
 	};
 
 	using Seed_t = std::vector<IHit*>;
