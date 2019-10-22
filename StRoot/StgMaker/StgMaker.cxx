@@ -435,10 +435,52 @@ void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, co
   // TODO: We may need to extend our "geometry" classes for RK parameters
   FillTrackGeometry( otrack, itrack, z_fst [0], kInnerGeometry );
   FillTrackGeometry( otrack, itrack, z_stgc[3], kOuterGeometry );
+
+  // Next fill the fit traits
+  FillTrackFitTraits( otrack, itrack );
   
 }
+//________________________________________________________________________
+void StgMaker::FillTrackFitTraits( StTrack*             otrack, genfit::Track* itrack ) {
 
-// //________________________________________________________________________
+  unsigned short g3id_pid_hypothesis = 6; // TODO: do not hard code this
+
+  // TODO: extract chi2 and covariance from the GF track
+  float chi2[] = {0,0};
+  float covM[15] = { 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0 };
+
+  // ... odd that we make this determination based on the output track's type ...
+  if ( primary == otrack->type() ) {
+    // TODO: chi2[1] should hold the incremental chi2 of adding the vertex for the primary track
+  }
+
+  StTrackFitTraits fit_traits(g3id_pid_hypothesis,0,chi2,covM);
+
+  // Get number of hits in all detectors
+  int nhits[kMaxDetectorId] = {};
+  for ( const auto* point : itrack->getPoints() ) {
+
+    const auto* measurement = point->getRawMeasurement();
+    int detId = measurement->getDetId();
+    nhits[detId]++;
+
+  }
+
+  for ( int i=0;i<kMaxDetectorId;i++ ) {
+    if ( 0 == nhits[i] ) continue; // not sure why, but Sti skips setting zero hits
+    fit_traits.setNumberOfFitPoints( (unsigned char)nhits[i], (StDetectorId)i );
+  }
+
+  if ( primary == otrack->type() ) {
+    fit_traits.setPrimaryVertexUsedInFit( true );
+  }
+  
+  otrack -> setFitTraits( fit_traits );
+
+  
+ 
+}
+//________________________________________________________________________
 void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* itrack, double zplane, int io ) {
 
   

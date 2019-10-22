@@ -54,9 +54,10 @@ protected:
 
   // Fill StEvent
   void FillEvent();
-  void FillDetectorInfo ( StTrackDetectorInfo* info,   genfit::Track* track, bool increment );
-  void FillTrack        ( StTrack*             otrack, genfit::Track* itrack, const Seed_t& iseed, StTrackDetectorInfo* info );
-  void FillTrackGeometry( StTrack*             otrack, genfit::Track* itrack, double zplane, int io );
+  void FillDetectorInfo  ( StTrackDetectorInfo* info,   genfit::Track* track, bool increment );
+  void FillTrack         ( StTrack*             otrack, genfit::Track* itrack, const Seed_t& iseed, StTrackDetectorInfo* info );
+  void FillTrackGeometry ( StTrack*             otrack, genfit::Track* itrack, double zplane, int io );
+  void FillTrackFitTraits( StTrack*             otrack, genfit::Track* itrack );
 
 #endif
   
