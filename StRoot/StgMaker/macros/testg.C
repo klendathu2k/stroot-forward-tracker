@@ -1,7 +1,7 @@
 void testg() {
 
   gROOT->LoadMacro("bfc.C");
-  bfc(0,"fzin agml makeevent sdt20181215","testg.fzd");
+  bfc(0,"fzin agml debug makeevent stu sdt20181215 cmudst","testg.fzd");
   gSystem->Load("/star/simu/simu/jwebb/2019/10-09-2019-forward-tracker-integration/GenFit/lib/libgenfit2.so"); 
   gSystem->Load("StgUtil.so");
   gSystem->Load("StgMaker.so");
@@ -21,12 +21,50 @@ void testg() {
     delete geom;
   }
 
+  // Create genfit forward track maker and add it to the chain before the MuDst maker
   StgMaker *gmk = new StgMaker();
+  chain->AddAfter( "0Event", gmk );
+
+  // And initialize it, since we have already initialized the chain
   gmk->Init();
 
+
+  // Do an ls to be sure
+  chain->ls(3);
+
+
+  // Loop over all events in the file...
   int stat = 0; 
   while (stat==0) {
     chain->Clear();
-stat =    chain->Make(); 
+    stat =    chain->Make(); 
+    if (stat) break;
+
+    // Get StEvent
+    StEvent* event = (StEvent* )chain->GetDataSet("StEvent");
+    assert(event);
+
+    //    event->statistics();
+
+    int nnodes = event->trackNodes().size();
+
+    cout << "EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT " << endl;
+    cout << "nnodes = " << nnodes << endl;
+    for ( int i=0;i<nnodes; i++ ) {
+
+      const StTrackNode* node = event->trackNodes()[i];
+      StGlobalTrack* track = node->track(global);
+      StTrackGeometry* geometry = track->geometry();
+
+      StThreeVectorF origin = geometry->origin();
+      StThreeVectorF momentum = geometry->momentum();
+      
+      cout << "Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
+
+
+    }
+
+
   }
+
 }
