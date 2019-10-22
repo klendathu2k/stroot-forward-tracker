@@ -438,7 +438,100 @@ void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, co
 
   // Next fill the fit traits
   FillTrackFitTraits( otrack, itrack );
+
+  // Set detector info
+  otrack->setDetectorInfo( info );
+
+  // NOTE:  StStiEventFiller calls StuFixTopoMap here... 
+
+  // Fill the track flags
+  FillTrackFlags( otrack, itrack );
+
   
+
+  //covM[k++] = M(0,5); covM[k++] = M(1,5); covM[k++] = M(2,5); covM[k++] = M(3,5); covM[k++] = M(4,5); covM[k++] = M(5,5);  
+}
+//________________________________________________________________________
+void StgMaker::FillTrackFlags( StTrack* otrack, genfit::Track* itrack ) {
+
+  int flag = 0;
+  // StiStEventFiller::setFlag does two things.  1) it sets the track flags, indicating
+  // which detectors have participated in the track.  It is a four digit value encoded
+  // as follows (from StTrack.h):
+
+/* --------------------------------------------------------------------------
+ *  The track flag (mFlag accessed via flag() method) definitions with ITTF 
+ *  (flag definition in EGR era can be found at
+ *   http://www.star.bnl.gov/STAR/html/all_l/html/dst_track_flags.html)
+ *
+ *  mFlag= zxyy, where  z = 1 for pile up track in TPC (otherwise 0) 
+ *                      x indicates the detectors included in the fit and 
+ *                     yy indicates the status of the fit. 
+ *  Positive mFlag values are good fits, negative values are bad fits. 
+ *
+ *  The first digit indicates which detectors were used in the refit: 
+ *
+ *      x=1 -> TPC only 
+ *      x=3 -> TPC       + primary vertex 
+ *      x=5 -> SVT + TPC 
+ *      x=6 -> SVT + TPC + primary vertex 
+ *      x=7 -> FTPC only 
+ *      x=8 -> FTPC      + primary 
+ *      x=9 -> TPC beam background tracks            
+ *
+ *  The last two digits indicate the status of the refit: 
+ *       = +x01 -> good track 
+ *
+ *      = -x01 -> Bad fit, outlier removal eliminated too many points 
+ *      = -x02 -> Bad fit, not enough points to fit 
+ *      = -x03 -> Bad fit, too many fit iterations 
+ *      = -x04 -> Bad Fit, too many outlier removal iterations 
+ *      = -x06 -> Bad fit, outlier could not be identified 
+ *      = -x10 -> Bad fit, not enough points to start 
+ *
+ *      = +x11 -> Short track pointing to EEMC */
+
+
+  // NOTE: First digit will be used as follows for forward tracks
+  //
+  // x = 5 sTGC only
+  // x = 6 sTGC + primary vertex
+  // x = 7 sTGC + forward silicon
+  // x = 8 sTGC + forward silicon + primary vertex  
+  
+  if      ( global  == otrack->type() ) flag = 501;
+  else if ( primary == otrack->type() ) flag = 601;
+
+  // TODO: detect presence of silicon hits and add appropriately to the flag
+
+  
+  // As for "bad" fits, I believe GenFit does not propagate fit information for
+  // failed fits.  (???).  So we will not publish bad track flags.
+
+}
+//________________________________________________________________________
+void StgMaker::FillTrackMatches( StTrack* otrack, genfit::Track* itrack ) {
+  
+  // TODO:
+
+  // At midrapidity, we extend the track to the fast detectors and check to see whether
+  // the track matches an active element or not.  The fast detectors are the barrel time-
+  // of-flight, the barrel EM calorimeter and teh endcap EM calorimeter.
+
+  // We will be interested in matching FTS tracks to the following subsystems:
+  // 1) The event plane detector
+  // 2) Forward EM cal
+  // 3) Forward Hadronic cal
+
+  // We could adopt the following scheme to save the track fit information in a way that
+  // can be accessed later, without modification to the StEvent data model...
+
+  // Save the state of the fit (mapped to a helix) at the first silicon layer as the inner geometry.
+  // Save the state of the fit (mapped to a helix) at the event plane detector as the outer geometry.
+  // Save the state of the fit (mapped to a helix) at the front of the EM cal as the "Ext" geometry
+  // ... helix would have no curvature at that point and would be a straight line, as there is no b field.
+  // ... can easily get to the HCAL from there...
+
 }
 //________________________________________________________________________
 void StgMaker::FillTrackFitTraits( StTrack*             otrack, genfit::Track* itrack ) {
