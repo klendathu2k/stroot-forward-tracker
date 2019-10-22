@@ -443,16 +443,80 @@ void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, co
 //________________________________________________________________________
 void StgMaker::FillTrackFitTraits( StTrack*             otrack, genfit::Track* itrack ) {
 
+  const double z_fst[]  = { 93.3, 140.0, 186.6 };
+  const double z_stgc[] = { 280.9, 303.7, 326.6, 349.4 };
+
   unsigned short g3id_pid_hypothesis = 6; // TODO: do not hard code this
 
-  // TODO: extract chi2 and covariance from the GF track
-  float chi2[] = {0,0};
-  float covM[15] = { 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0 };
+  // Set the chi2 of the fit.  The second element in the array is the incremental
+  // chi2 for adding the vertex to the primary track.
+  float chi2[] = {0,-999};
+  const auto* fit_status = itrack->getFitStatus();
+  if ( 0==fit_status ) {
+    LOG_WARN << "genfit track with no fit status" << endm;
+    return;
+  }
+  
+  chi2[0] = fit_status->getChi2();
+  int ndf = fit_status->getNdf();
+
+  chi2[0]/=ndf; // TODO: Check if this is right
 
   // ... odd that we make this determination based on the output track's type ...
   if ( primary == otrack->type() ) {
     // TODO: chi2[1] should hold the incremental chi2 of adding the vertex for the primary track
+    //       is this available from genfit?
   }
+
+  // Covariance matrix is next.  This one should be fun.  StEvent assumes the helix
+  // model, but we have fit to the Runga Kutta track model.  The covariance matrix 
+  // is different.  So... TODO:  Do we need to specify covM for the equivalent helix?
+  float covM[15] = { 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0 };
+
+  // Obtain fitted state so we can grab the covariance matrix
+  genfit::MeasuredStateOnPlane state = itrack->getFittedState(0);
+
+  // For global tracks, we are evaluating the fit at the first silicon plane.
+  // Extrapolate the fit to this point so we can extract the covariance matrix
+  // there.  For primary track, point 0 should correspond to the vertex. 
+  //
+  // TODO: verify first point on primary tracks is the vertex.
+  if ( global == otrack->type() ) {
+      
+    // Obtain the cardinal representation
+    genfit::AbsTrackRep* cardinal =  itrack->getCardinalRep();
+    
+    // We really don't want the overhead in the TVector3 ctor/dtor here
+    static TVector3 xhat(1,0,0), yhat(0,1,0), Z(0,0,0);
+    
+    // Assign the z position
+    Z[2] = z_fst[0];
+    
+    // This is the plane for which we are evaluating the fit
+    const auto detectorPlane = genfit::SharedPlanePtr( new genfit::DetPlane(Z, xhat, yhat) );
+    
+    // Update the state to the given plane
+    cardinal->extrapolateToPlane( state, detectorPlane, false, true );
+
+  }
+
+  // Grab the covariance matrix
+  const auto& M = state.getCov();
+
+  // TODO: This is where we would do the math and transform from the Runga Kutta basis
+  //       to the helix basis... but do we need to?
+
+  int k=0;
+  covM[k++] = M(0,0);
+  covM[k++] = M(0,1); covM[k++] = M(1,1);
+  covM[k++] = M(0,2); covM[k++] = M(1,2); covM[k++] = M(2,2);
+  covM[k++] = M(0,3); covM[k++] = M(1,3); covM[k++] = M(2,3); covM[k++] = M(3,3);
+  covM[k++] = M(0,4); covM[k++] = M(1,4); covM[k++] = M(2,4); covM[k++] = M(3,4); covM[k++] = M(4,4);
+
+  
+
+  
+  
 
   StTrackFitTraits fit_traits(g3id_pid_hypothesis,0,chi2,covM);
 
