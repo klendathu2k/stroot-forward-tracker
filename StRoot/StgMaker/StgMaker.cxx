@@ -355,6 +355,8 @@ void StgMaker::FillEvent() {
   LOG_INFO << "  number of tracks      = " << glob_tracks.size() << endm;
   LOG_INFO << "  number of track seeds = " << seed_tracks.size() << endm;
 
+  // StiStEventFiller fills track nodes and detector infos by reference... there
+  // has got to be a cleaner way to do this, but for now follow along.
   auto& trackNodes         = event->trackNodes();
   auto& trackDetectorInfos = event->trackDetectorInfo();
 
@@ -384,9 +386,12 @@ void StgMaker::FillEvent() {
 
     // Fill the track with the good stuff
     FillTrack( globalTrack, track, seed, detectorInfo );   
+    trackNode->addTrack( globalTrack );
 
     // On successful fill (and I don't see why we wouldn't be) add detector info to the list
     trackDetectorInfos.push_back( detectorInfo );    
+
+    trackNodes.push_back( trackNode );
 
     // // Set relationships w/ tracker object and MC truth
     // // globalTrack->setKey( key );
