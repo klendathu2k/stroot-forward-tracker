@@ -59,10 +59,19 @@ void testg() {
       StThreeVectorF origin = geometry->origin();
       StThreeVectorF momentum = geometry->momentum();
       
-      cout << "Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
+      cout << "-------------------------------------------------------------------------------" << endl;
+      cout << "Track # " << i << endl;
+      cout << "inner: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
+
+      StDcaGeometry* dca = track->dcaGeometry();
+      origin = dca->origin();
+      momentum = dca->momentum();
+      cout << "d c a: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
+
 
 
     }
+      cout << "-------------------------------------------------------------------------------" << endl;
 
 
   }

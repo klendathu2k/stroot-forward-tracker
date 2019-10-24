@@ -58,6 +58,7 @@ protected:
   void FillTrack         ( StTrack*             otrack, genfit::Track* itrack, const Seed_t& iseed, StTrackDetectorInfo* info );
   void FillTrackFlags    ( StTrack*             otrack, genfit::Track* itrack );
   void FillTrackGeometry ( StTrack*             otrack, genfit::Track* itrack, double zplane, int io );
+  void FillTrackDcaGeometry ( StTrack*             otrack, genfit::Track* itrack );
   void FillTrackFitTraits( StTrack*             otrack, genfit::Track* itrack );
   void FillTrackMatches  ( StTrack*             otrack, genfit::Track* itrack );
 
