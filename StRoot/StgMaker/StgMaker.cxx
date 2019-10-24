@@ -20,6 +20,8 @@
 #include "StTrackGeometry.h"
 #include "StHelixModel.h"
 
+#include "TRungeKutta.h"
+
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_fts_hit_Table.h"
 
@@ -166,7 +168,7 @@ int StgMaker::Make() {
   
   StEvent* event = static_cast<StEvent*>(GetInputDS("StEvent"));
   if ( 0==event ) {
-    LOG_INFO << "No event, punt on forward tracking." << endm;
+    LOG_INFO << "No event, punt on forward tracking." << endm; assert(0);
     return kStWarn;
   }
 
@@ -248,13 +250,16 @@ int StgMaker::Make() {
   }
 
 
+  int nfsi = 0;
   St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
   if ( g2t_fsi_hits == nullptr){
     LOG_INFO << "g2t_fsi_hits is null" << endm;
-    return kStErr;
+    //return kStErr;
+  }
+  else {
+    g2t_fsi_hits->GetNRows();
   }
 
-  int nfsi = g2t_fsi_hits->GetNRows();
   for ( int i=0;i< -nfsi;i++ ) {   // yes, negative... because are skipping Si in initial tests
 
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_fsi_hits->At(i); if (0==git) continue; // geant hit
@@ -278,6 +283,9 @@ int StgMaker::Make() {
   }
 
 #endif  
+
+  LOG_INFO << "mForwardTracker -> doEvent()" << endm;
+  
 
   // Process single event
   mForwardTracker -> doEvent();
