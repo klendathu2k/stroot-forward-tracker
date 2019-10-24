@@ -103,7 +103,8 @@ class TrackFitter {
 			}
 		} else {
 			useSi = false;
-			float DET_Z[] = {273, 303, 333, 362 };
+			//float DET_Z[] = {273, 303, 333, 362 };
+			float DET_Z[] = {281, 304, 327, 349 };
 			for ( auto z : DET_Z ){
 				LOG_F( INFO, "Adding DetPlane at (0, 0, %0.2f)", z );
 				DetPlanes.push_back( genfit::SharedPlanePtr(new genfit::DetPlane(TVector3(0,0,z), TVector3(1,0,0), TVector3(0,1,0))) );
