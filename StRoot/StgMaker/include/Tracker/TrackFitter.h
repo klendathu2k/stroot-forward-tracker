@@ -425,7 +425,7 @@ class TrackFitter {
 
 	}
 
-        TVector3 fitTrack( vector<KiTrack::IHit *> trackCand, double *Vertex = 0 ) {
+        TVector3 fitTrack( vector<KiTrack::IHit *> trackCand, float *Vertex = 0 ) {
 		LOG_SCOPE_FUNCTION(INFO);
 
 		LOG_F( INFO, "Track candidate size: %lu", trackCand.size() );
@@ -453,7 +453,7 @@ class TrackFitter {
 		auto trackRepNeg = new genfit::RKTrackRep(pdg_mu_minus);
 	
 		// If we use the PV, use that as the start pos for the track
-		if ( includeVertexInFit ){
+		if ( includeVertexInFit || Vertex ){
 			seedPos.SetXYZ( pv[0], pv[1], pv[2] );
 		}
 
@@ -473,7 +473,7 @@ class TrackFitter {
 		/******************************************************************************************************************************
 		* Include the Primary vertex if desired
 		*******************************************************************************************************************************/
-		if ( includeVertexInFit ) {
+		if ( includeVertexInFit || Vertex ) {
 			
 			TMatrixDSym hitCov3(3);
 			hitCov3(0,0) = vertexSigmaXY * vertexSigmaXY;

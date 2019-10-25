@@ -267,13 +267,13 @@ namespace KiTrack {
 
 
 
-		void doEvent( unsigned long long int iEvent = 0 ) {
+	  void doEvent( unsigned long long int iEvent = 0, float* vertex=0 ) {
 
 		  // Moved cleanup to the start of doEvent, so that the fit results
 		  // persist after the call		  
 			recoTracks.clear();
 			fitMoms.clear();
-			fitStatus.clear();
+			_globalFitStatus.clear();
 
 			// Clear pointers to the track reps from previous event
 			for ( auto p : _globalTrackReps ) delete p;			
@@ -307,10 +307,10 @@ namespace KiTrack {
 
 			if ( mcTrackFinding ){
 				doMcTrackFinding( mcTrackMap );
-				qPlotter->summarizeEvent( recoTracks, mcTrackMap, fitMoms, fitStatus );
+				qPlotter->summarizeEvent( recoTracks, mcTrackMap, fitMoms, _globalFitStatus );
 				//				recoTracks.clear();
 				//				fitMoms.clear();
-				//				fitStatus.clear();
+				//				_globalFitStatus.clear();
 				// trackFitter->finishEvent();
 				return;
 			}
@@ -323,7 +323,7 @@ namespace KiTrack {
 			}
 
 			
-			qPlotter->summarizeEvent( recoTracks, mcTrackMap, fitMoms, fitStatus );
+			qPlotter->summarizeEvent( recoTracks, mcTrackMap, fitMoms, _globalFitStatus );
 
 
 			
@@ -355,7 +355,7 @@ namespace KiTrack {
 			for ( auto t : recoTracks ){
 				TVector3 p = trackFitter->fitTrack( t );
 				fitMoms.push_back(p);
-				fitStatus.push_back( trackFitter->getStatus() );
+				_globalFitStatus.push_back( trackFitter->getStatus() );
 				// Clone the track rep
 				_globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
 				genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
@@ -496,7 +496,7 @@ namespace KiTrack {
 				for ( auto t : acceptedTracks ){
 					TVector3 p = trackFitter->fitTrack( t );
 					fitMoms.push_back(p);
-					fitStatus.push_back( trackFitter->getStatus() );
+					_globalFitStatus.push_back( trackFitter->getStatus() );
 					// Clone the track rep
 					_globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
 					genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
@@ -577,9 +577,13 @@ namespace KiTrack {
 		std::vector<Seed_t> recoTracks; // the tracks recod from all iterations
 	        std::vector<TVector3> fitMoms;
 		// vector<int> fitQs;
-                std::vector<genfit::FitStatus>     fitStatus;
+                std::vector<genfit::FitStatus>    _globalFitStatus;
                 std::vector<genfit::AbsTrackRep*> _globalTrackReps;
                 std::vector<genfit::Track*>       _globalTracks;
+
+                std::vector<genfit::FitStatus>    _primaryFitStatus;
+                std::vector<genfit::AbsTrackRep*> _primaryTrackReps;
+                std::vector<genfit::Track*>       _primaryTracks;
 
 		QualityPlotter *qPlotter;
 		IHitLoader *hitLoader;
@@ -589,9 +593,24 @@ namespace KiTrack {
 	public:
 	  const std::vector<Seed_t>& getRecoTracks() const { return recoTracks; }
 	  const std::vector<TVector3>& getFitMomenta() const { return fitMoms; }
-	  const std::vector<genfit::FitStatus>& getFitStatus() const { return fitStatus; }
-	  const std::vector<genfit::AbsTrackRep*>& globalTrackReps() const { return _globalTrackReps; }
-	  const std::vector<genfit::Track*> &globalTracks() const { return _globalTracks; }
+	  const std::vector<genfit::FitStatus>& getFitStatus() const { 
+	    return _globalFitStatus; 
+	  }
+	  const std::vector<genfit::AbsTrackRep*>& globalTrackReps() const { 
+	    return _globalTrackReps; 
+	  }
+	  const std::vector<genfit::Track*> &globalTracks() const { 
+	    return _globalTracks; 
+	  }
+	  const std::vector<genfit::FitStatus>& getPrimaryFitStatus() const { 
+	    return _primaryFitStatus; 
+	  }
+	  const std::vector<genfit::AbsTrackRep*>& primaryTrackReps() const { 
+	    return _primaryTrackReps; 
+	  }
+	  const std::vector<genfit::Track*> &primaryTracks() const { 
+	    return _primaryTracks; 
+	  }
 	  
 	};
 
