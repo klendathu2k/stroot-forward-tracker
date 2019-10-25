@@ -45,6 +45,7 @@
 template<typename T> bool accept( T ){ return true; }
 
 template<> bool accept( genfit::Track* track ) {
+  if ( 0==track ) return false;
   if (track->getNumPoints() <= 0 ) return false; // fit may have failed
   return true;
 };
@@ -305,9 +306,17 @@ int StgMaker::Make() {
 
   LOG_INFO << "mForwardTracker -> doEvent()" << endm;
   
+  // Introduce smearing to vertex (diagonal error matrix assumed)
+  float vtx[] = {
+    mVertex[0] + gRandom->Gaus() * mVertexError[0],
+    mVertex[1] + gRandom->Gaus() * mVertexError[2],
+    mVertex[2] + gRandom->Gaus() * mVertexError[5]
+  };
+
 
   // Process single event
-  mForwardTracker -> doEvent();
+  if ( IAttr("FIT_PRIMARY") == 0 )   mForwardTracker -> doEvent( 0 );
+  else                               mForwardTracker -> doEvent( 0, vtx );
 
   // Now fill StEvent
   FillEvent();
@@ -377,16 +386,22 @@ void StgMaker::FillEvent() {
   const auto& seed_tracks = mForwardTracker -> getRecoTracks();
   // Reconstructed globals
   const auto& glob_tracks = mForwardTracker -> globalTracks();
+  // Reconstructed primaries (may be empty)
+  const auto& prim_tracks = mForwardTracker -> primaryTracks();
+  int nprim_tracks = prim_tracks.size();
+
 
   // Clear up somethings... (but does this interfere w/ Sti and/or Stv?)
   StEventHelper::Remove(event,"StSPtrVecTrackNode");
   StEventHelper::Remove(event,"StSPtrVecPrimaryVertex");
 
-  LOG_INFO << "  number of tracks      = " << glob_tracks.size() << endm;
+  LOG_INFO << "  number of tracks [gl] = " << glob_tracks.size() << endm;
+  LOG_INFO << "  number of tracks [pr] = " << prim_tracks.size() << endm;
   LOG_INFO << "  number of track seeds = " << seed_tracks.size() << endm;
 
   // StiStEventFiller fills track nodes and detector infos by reference... there
-  // has got to be a cleaner way to do this, but for now follow along.
+  // has got to be a cleaner way to do this, but for now follow along.  (At least
+  // we don't use a goto anywhere...) 
   auto& trackNodes         = event->trackNodes();
   auto& trackDetectorInfos = event->trackDetectorInfo();
 
@@ -394,8 +409,9 @@ void StgMaker::FillEvent() {
   int track_count_accept = 0;
   for ( auto* track : mForwardTracker->globalTracks() ) {
 
-    // Get the track seed
+    // Get the track seed and primary track (which may be null) // TODO: improve const-ness
     const auto& seed = seed_tracks[track_count_total];
+          auto* prim = (nprim_tracks) ? prim_tracks[track_count_total] : 0;
 
     // Increment total track count
     track_count_total++;
@@ -403,6 +419,9 @@ void StgMaker::FillEvent() {
     // Check to see if the track passes cuts (it should, for now)
     if ( 0==accept(track) ) continue; 
     track_count_accept++;
+
+
+
 
     // Create a detector info object to be filled
     StTrackDetectorInfo* detectorInfo = new StTrackDetectorInfo;
@@ -413,14 +432,28 @@ void StgMaker::FillEvent() {
 
     // This is our global track, to be filled from the genfit::Track object "track"
     StGlobalTrack* globalTrack = new StGlobalTrack;
+    globalTrack->setKey( track_count_accept );
 
     // Fill the track with the good stuff
     FillTrack( globalTrack, track, seed, detectorInfo );   
     trackNode->addTrack( globalTrack );
 
+
+    // And repeat with the primary track (if it was fit)
+    if ( accept(prim) ) {
+
+      StPrimaryTrack* primaryTrack = new StPrimaryTrack;
+      primaryTrack->setKey( track_count_accept );
+      FillTrack( primaryTrack, prim, seed, detectorInfo );
+
+      trackNode->addTrack( primaryTrack );
+      
+    }
+    
+
+
     // On successful fill (and I don't see why we wouldn't be) add detector info to the list
     trackDetectorInfos.push_back( detectorInfo );    
-
     trackNodes.push_back( trackNode );
 
     // // Set relationships w/ tracker object and MC truth

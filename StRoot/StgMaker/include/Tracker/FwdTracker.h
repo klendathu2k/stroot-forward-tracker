@@ -283,6 +283,17 @@ namespace KiTrack {
 			for ( auto p : _globalTracks ) delete p;
 			_globalTracks.clear();
 
+			_primaryFitStatus.clear();
+
+			// Clear pointers to the track reps from previous event
+			for ( auto p : _primaryTrackReps ) delete p;			
+			_primaryTrackReps.clear();
+
+			// Clear pointers to global tracks
+			for ( auto p : _primaryTracks ) delete p;
+			_primaryTracks.clear();
+
+
 			LOG_SCOPE_FUNCTION(INFO);
 			LOG_F( INFO, "/******************************EVENT START ********************************/" );
 			LOG_F( INFO, "iEvent = %llu", iEvent );
@@ -319,7 +330,7 @@ namespace KiTrack {
 			LOG_F( INFO, "Running %lu Tracking Iterations", nIterations );
 			
 			for ( size_t iIteration = 0; iIteration < nIterations; iIteration++ ){
-				doTrackIteration( iIteration, hitmap );
+			  doTrackIteration( iIteration, hitmap, vertex );
 			}
 
 			
@@ -365,7 +376,7 @@ namespace KiTrack {
 			qPlotter->afterIteration( 0, recoTracks );
 		}
 
-		void doTrackIteration( size_t iIteration, std::map<int, std::vector<IHit*> > &hitmap ){
+                void doTrackIteration( size_t iIteration, std::map<int, std::vector<IHit*> > &hitmap, float* vertex=0 ){
 			LOG_SCOPE_FUNCTION( INFO );
 			LOG_F( INFO, "Tracking Iteration %lu", iIteration );
 
@@ -494,13 +505,26 @@ namespace KiTrack {
 
 				
 				for ( auto t : acceptedTracks ){
-					TVector3 p = trackFitter->fitTrack( t );
-					fitMoms.push_back(p);
-					_globalFitStatus.push_back( trackFitter->getStatus() );
-					// Clone the track rep
-					_globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
-					genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
-					_globalTracks.push_back( mytrack );
+
+				  // Perform global track fit
+				  TVector3 p = trackFitter->fitTrack( t );
+				  fitMoms.push_back(p);
+				  _globalFitStatus.push_back( trackFitter->getStatus() );
+				  // Clone the track rep
+				  _globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
+				  genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
+				  _globalTracks.push_back( mytrack );
+
+				  if ( 0==vertex ) continue;
+
+				  //				  LOG_F( INFO, "Fitting primary track" )
+
+				  // Perform primary track fit
+				  trackFitter->fitTrack( t, vertex );
+				  _primaryFitStatus.push_back( trackFitter->getStatus() );
+				  _primaryTrackReps.push_back( trackFitter->getTrackRep()->clone() );
+				  mytrack = new genfit::Track( *trackFitter->getTrack() );
+				  _primaryTracks.push_back( mytrack );
 
 				}
 
@@ -535,11 +559,11 @@ namespace KiTrack {
 				std::vector<Seed_t> tracks = automaton.getTracks(minHitsOnTrack);
 				LOG_F( INFO, "We have %lu Tracks to work with", tracks.size() );
 
+				// Perform global track fit
 				for ( auto t : tracks ){
 					TVector3 p = trackFitter->fitTrack( t );
 					fitMoms.push_back(p);
 				}
-
 				qPlotter->afterIteration( iIteration, tracks );
 
 

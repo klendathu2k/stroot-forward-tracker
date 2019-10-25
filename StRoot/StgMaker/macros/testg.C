@@ -27,7 +27,7 @@ void testg() {
 
   // And initialize it, since we have already initialized the chain
   gmk->Init();
-
+  gmk->SetAttr("FIT_PRIMARY", 0);
 
   // Do an ls to be sure
   chain->ls(3);
