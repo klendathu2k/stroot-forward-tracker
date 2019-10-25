@@ -20,6 +20,8 @@
 #include "StTrackGeometry.h"
 #include "StHelixModel.h"
 
+#include "TRungeKutta.h"
+
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_fts_hit_Table.h"
 
@@ -33,6 +35,9 @@
 #include "StEvent/StEnumerations.h"
 
 #include "StarClassLibrary/StPhysicalHelix.hh"
+
+#include <limits>
+
 
 //_______________________________________________________________________________________
 // For now, accept anything we are passed, no matter what it is or how bad it is
@@ -163,7 +168,7 @@ int StgMaker::Make() {
   
   StEvent* event = static_cast<StEvent*>(GetInputDS("StEvent"));
   if ( 0==event ) {
-    LOG_INFO << "No event, punt on forward tracking." << endm;
+    LOG_INFO << "No event, punt on forward tracking." << endm; assert(0);
     return kStWarn;
   }
 
@@ -245,13 +250,16 @@ int StgMaker::Make() {
   }
 
 
+  int nfsi = 0;
   St_g2t_fts_hit* g2t_fsi_hits = (St_g2t_fts_hit*) GetDataSet("geant/g2t_fsi_hit");
   if ( g2t_fsi_hits == nullptr){
     LOG_INFO << "g2t_fsi_hits is null" << endm;
-    return kStErr;
+    //return kStErr;
+  }
+  else {
+    g2t_fsi_hits->GetNRows();
   }
 
-  int nfsi = g2t_fsi_hits->GetNRows();
   for ( int i=0;i< -nfsi;i++ ) {   // yes, negative... because are skipping Si in initial tests
 
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_fsi_hits->At(i); if (0==git) continue; // geant hit
@@ -275,6 +283,9 @@ int StgMaker::Make() {
   }
 
 #endif  
+
+  LOG_INFO << "mForwardTracker -> doEvent()" << endm;
+  
 
   // Process single event
   mForwardTracker -> doEvent();
@@ -452,7 +463,8 @@ void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, co
   // Fill the track flags
   FillTrackFlags( otrack, itrack );
 
-  
+  // If the track is a global track, fill the DCA geometry
+  if ( global == otrack->type() ) FillTrackDcaGeometry( otrack, itrack );
 
   //covM[k++] = M(0,5); covM[k++] = M(1,5); covM[k++] = M(2,5); covM[k++] = M(3,5); covM[k++] = M(4,5); covM[k++] = M(5,5);  
 }
@@ -716,6 +728,112 @@ void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* it
 
   if ( kInnerGeometry == io ) otrack->setGeometry( geometry );
   else                        otrack->setOuterGeometry( geometry );
+  
+
+}
+//________________________________________________________________________
+void StgMaker::FillTrackDcaGeometry( StTrack*          otrack_, genfit::Track* itrack ) {
+
+  // Recast to global track
+  StGlobalTrack* otrack = dynamic_cast<StGlobalTrack*>(otrack_);
+  if (0 == otrack) return; 
+  
+  // Obtain fitted state 
+  genfit::MeasuredStateOnPlane measuredState = itrack->getFittedState(1);
+
+  // Obtain the cardinal representation
+  genfit::AbsTrackRep* cardinal =  itrack->getCardinalRep();
+
+  const TVector3 vertex(0.,0.,0.); // TODO get actual primary vertex
+  const TVector3 direct(0.,0.,1.); // TODO get actual beamline slope
+
+  cardinal->extrapolateToLine(  measuredState, vertex, direct, false, true );
+
+  static StThreeVector<double> momentum;
+  static StThreeVector<double> origin;  
+
+  static TVector3 pos;
+  static TVector3 mom;
+  static TMatrixDSym cov;
+
+  measuredState.getPosMomCov(pos, mom, cov);
+
+  for ( int i=0;i<3;i++ )  momentum[i] = mom[i];
+  for ( int i=0;i<3; i++ ) origin[i]   = pos[i];
+
+  double charge = measuredState.getCharge();
+
+#if 1
+  double eta    = momentum.pseudoRapidity();
+  double pt     = momentum.perp();
+  double ptinv  = (pt!=0) ? 1.0/pt : std::numeric_limits<double>::max();
+ 
+  // Get magnetic field
+  double X[] = { pos[0], pos[1], pos[2] };
+  double B[] = { 0, 0, 0 };
+  StarMagField::Instance()->Field( X, B );
+
+  // This is really an approximation, should be good enough for the inner
+  // geometry (in the Silicon) but terrible in the outer geometry ( sTGC)
+  double Bz = B[2];
+
+  // Temporary helix to get the helix parameters
+  StPhysicalHelix helix( momentum, origin, Bz, charge );
+
+  // StiStEventFiller has this as |curv|. 
+  double curv =  TMath::Abs(helix.curvature());
+  double h    = -TMath::Sign(charge*Bz, 1.0); // helicity
+  if ( charge==0 ) h = 1;
+  //
+  // From StHelix::helix()
+  //
+  // phase = mPsi - h*pi/2
+  // so...
+  // psi = phase + h*pi/2
+  //
+  double psi  = helix.phase() + h * TMath::Pi() / 2;
+  double dip  = helix.dipAngle();
+  double tanl = TMath::Tan(dip); // TODO: check this
+  short  q    = charge; assert( q==1 || q==-1 || q==0 );
+
+  /* These are the seven parameters defined in DCA geometry...
+
+    /// signed impact parameter; Signed in such a way that (in Sti local coords????)
+    ///     x =  -impact*sin(Psi)
+    ///     y =   impact*cos(Psi)
+    Float_t  mImp;
+    ///  Z-coordinate of this track (reference plane)
+    Float_t  mZ;
+    ///  Psi angle of the track
+    Float_t  mPsi;
+    /// signed invert pt [sign = sign(-qB)]
+    Float_t  mPti;
+    /// tangent of the track momentum dip angle
+    Float_t  mTan;
+    /// signed curvature
+    Float_t  mCurv;
+
+  */
+
+  // TODO: is this right?
+  double mImp  = origin.perp();
+  double mZ    = origin[2];
+  double mPsi  = psi;
+  double mPti  = ptinv;
+  double mTan  = tanl;
+  double mCurv = curv;
+  
+  double p[] = { mImp, mZ, mPsi, mPti, mTan, mCurv };
+
+  // TODO: fill in errors... (do this numerically?)
+  double e[15] = {};
+
+
+  StDcaGeometry* dca = new StDcaGeometry;
+  otrack->setDcaGeometry(dca);
+  dca->set(p,e);
+
+#endif
   
 
 }
