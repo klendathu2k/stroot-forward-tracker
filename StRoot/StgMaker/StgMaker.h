@@ -62,6 +62,9 @@ protected:
   void FillTrackFitTraits( StTrack*             otrack, genfit::Track* itrack );
   void FillTrackMatches  ( StTrack*             otrack, genfit::Track* itrack );
 
+  float mVertex[3];      /// Vertex position
+  float mVertexError[6]; /// Vertex err matrix
+
 
 #endif
   

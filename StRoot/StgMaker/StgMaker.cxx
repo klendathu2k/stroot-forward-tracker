@@ -24,6 +24,7 @@
 
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_fts_hit_Table.h"
+#include "tables/St_g2t_vertex_Table.h"
 
 
 #include "StarMagField.h"
@@ -123,7 +124,7 @@ public:
 };
 
 //________________________________________________________________________
-StgMaker::StgMaker() : StMaker("stg"), mForwardTracker(0), mForwardHitLoader(0), mFieldAdaptor(new StarFieldAdaptor()) {
+StgMaker::StgMaker() : StMaker("stg"), mForwardTracker(0), mForwardHitLoader(0), mFieldAdaptor(new StarFieldAdaptor()), mVertex({0.,0.,0.}), mVertexError({0.1,0.0,0.1,0.0,0.0,0.1}) {
 
 };
 //________________________________________________________________________
@@ -191,6 +192,24 @@ int StgMaker::Make() {
     if ( 0 == mcTrackMap[ track_id ] ) // should always happen
      mcTrackMap[ track_id ] = shared_ptr< KiTrack::McTrack >( new KiTrack::McTrack(pt, eta, phi, q) );    
   }
+
+  // Get geant vertex
+  St_g2t_vertex* g2t_vertex = (St_g2t_vertex *) GetDataSet("geant/g2t_vertex");
+  if ( g2t_vertex ) {
+    int nvertex = g2t_vertex->GetNRows();
+    if ( 0==nvertex ) {
+      LOG_WARN << "No g2t_vertex" << endm;
+      assert(0); // really strange
+    }
+    // Get the event vertex... appears that the ge_proc flag is not respected, and we always 
+    // should use ge_x as the vertex.  (??)
+    g2t_vertex_st* vtx = (g2t_vertex_st*) g2t_vertex->At(0);
+    mVertex[0] = vtx->ge_x[0];
+    mVertex[1] = vtx->ge_x[1];
+    mVertex[2] = vtx->ge_x[2];
+    LOG_INFO << "Setting MC vertex to (" << mVertex[0] << "," << mVertex[1] << "," << mVertex[2] << ")" << endm;
+  }
+
 
   // Add hits onto the hit loader (from rndHitCollection)
   int count = 0;

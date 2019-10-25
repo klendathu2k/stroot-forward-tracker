@@ -5,6 +5,8 @@ GEXE $STAR_LIB/xgeometry.so
 * AGUSER/GKINE NTRACK ID [ PTLOW PTHIGH YLOW YHIGH PHILOW PHIHIGH ZLOW ZHIGH option ]
 AGUSER/GKINE [ntrack] [g3id] [ptmn] [ptmx] [etamn] [etamx] 
 GFILE o testg.fzd
+gvertex 0.0 0.0 0.123 
+gspread 0.01 0.01 5.0  
 TRIG [nevents]
 EXIT
 RETURN
