@@ -1,10 +1,15 @@
-void testg() {
+TString infile = "testg.fzd";
+void testg( const char* filename=0 ) {
+
+  if (filename) infile = filename;
 
   gROOT->LoadMacro("bfc.C");
-  bfc(0,"fzin agml debug makeevent stu sdt20181215 cmudst","testg.fzd");
+  bfc(0,"fzin agml debug makeevent stu sdt20181215 cmudst", infile );
   gSystem->Load("/star/simu/simu/jwebb/2019/10-09-2019-forward-tracker-integration/GenFit/lib/libgenfit2.so"); 
   gSystem->Load("StgUtil.so");
   gSystem->Load("StgMaker.so");
+
+  if ( filename ) cout << filename << endl;
 
   // Force build of the geometry
   TFile* geom = TFile::Open("fGeom.root");
@@ -40,38 +45,38 @@ void testg() {
     stat =    chain->Make(); 
     if (stat) break;
 
-    // Get StEvent
-    StEvent* event = (StEvent* )chain->GetDataSet("StEvent");
-    assert(event);
+    // // Get StEvent
+    // StEvent* event = (StEvent* )chain->GetDataSet("StEvent");
+    // assert(event);
 
-    //    event->statistics();
+    // //    event->statistics();
 
-    int nnodes = event->trackNodes().size();
+    // int nnodes = event->trackNodes().size();
 
-    cout << "EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT " << endl;
-    cout << "nnodes = " << nnodes << endl;
-    for ( int i=0;i<nnodes; i++ ) {
+    // cout << "EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT EVENT " << endl;
+    // cout << "nnodes = " << nnodes << endl;
+    // for ( int i=0;i<nnodes; i++ ) {
 
-      const StTrackNode* node = event->trackNodes()[i];
-      StGlobalTrack* track = node->track(global);
-      StTrackGeometry* geometry = track->geometry();
+    //   const StTrackNode* node = event->trackNodes()[i];
+    //   StGlobalTrack* track = node->track(global);
+    //   StTrackGeometry* geometry = track->geometry();
 
-      StThreeVectorF origin = geometry->origin();
-      StThreeVectorF momentum = geometry->momentum();
+    //   StThreeVectorF origin = geometry->origin();
+    //   StThreeVectorF momentum = geometry->momentum();
       
-      cout << "-------------------------------------------------------------------------------" << endl;
-      cout << "Track # " << i << endl;
-      cout << "inner: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
+    //   cout << "-------------------------------------------------------------------------------" << endl;
+    //   cout << "Track # " << i << endl;
+    //   cout << "inner: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
 
-      StDcaGeometry* dca = track->dcaGeometry();
-      origin = dca->origin();
-      momentum = dca->momentum();
-      cout << "d c a: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
+    //   StDcaGeometry* dca = track->dcaGeometry();
+    //   origin = dca->origin();
+    //   momentum = dca->momentum();
+    //   cout << "d c a: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endl;
 
 
 
-    }
-      cout << "-------------------------------------------------------------------------------" << endl;
+    // }
+    //   cout << "-------------------------------------------------------------------------------" << endl;
 
 
   }
