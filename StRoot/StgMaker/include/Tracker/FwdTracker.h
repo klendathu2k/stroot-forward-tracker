@@ -62,6 +62,34 @@
 namespace KiTrack {
 
 
+  // Utility class for evaluating ID and QA truth
+  struct MCTruthUtils {
+     
+    static int domCon( std::vector<IHit*> hits, float& qual ) {
+      int numberOfHits = hits.size();
+      std::map<int,int> count;
+      int total = 0;
+      for ( auto* h : hits ) {
+	auto* hit = dynamic_cast<FwdHit*>( h );  if (0==hit) continue;
+	int idtruth = hit->_tid;
+	count[idtruth]++;total++;
+      }
+      int cmx = 0; // count max
+      int idtruth = 0;
+      for ( auto& iter : count ) {
+	if ( iter.second > cmx ) {
+	  cmx = iter.second;
+	  idtruth = iter.first;
+	}
+      }
+      if ( total > 0 ) qual = float(cmx) / float(total);
+      return idtruth;     
+    };
+
+
+  };
+
+
 	class ForwardTrackMaker {
 		public:
 		ForwardTrackMaker(  ) : 
@@ -299,7 +327,7 @@ namespace KiTrack {
 			
 			hitmap = hitLoader->load( iEvent );
 			std::map<int, shared_ptr<McTrack>> &mcTrackMap = hitLoader->getMcTrackMap();
-			// std::map<int, shared_ptr<McTrack>> &mcTrackMap = hitLoader->getMcTrackMap();
+
 
 			bool mcTrackFinding = true;
 			if ( cfg.exists("TrackFinder") )
@@ -358,7 +386,7 @@ namespace KiTrack {
 				fitStatus.push_back( trackFitter->getStatus() );
 				// Clone the track rep
 				_globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
-				genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
+				genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );				
 				_globalTracks.push_back( mytrack );
 			}
 
@@ -500,6 +528,9 @@ namespace KiTrack {
 					// Clone the track rep
 					_globalTrackReps.push_back( trackFitter->getTrackRep()->clone() );
 					genfit::Track* mytrack = new genfit::Track( *trackFitter->getTrack() );
+					float qatruth;
+					int idtruth = MCTruthUtils::domCon( t, qatruth );
+					mytrack->setMcTrackId( idtruth );
 					_globalTracks.push_back( mytrack );
 
 				}
