@@ -92,12 +92,12 @@ namespace KiTrack {
 		const ISectorSystem* getSectorSystem() const { return gFwdSystem; } // need to implement 
 		// StHit* _hit;
 
-		int _tid;
+                int _tid; // aka ID truth
 		int _vid;
 		unsigned int _id; // just a unique id for each hit in this event.
 		std::shared_ptr<McTrack> _mcTrack;
 
-	  StHit* _hit;
+                StHit* _hit;
 	  
 	};
 
