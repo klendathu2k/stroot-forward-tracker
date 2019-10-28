@@ -572,14 +572,16 @@ class TrackFitter {
 			_p = p;
 
 			
-			
-			studyProjectionToECal( cardinalRep, fitTrack );
+			/* 
+			  studyProjectionToECal( cardinalRep, fitTrack );
 
 			if ( _q > 0 ){
 				studyProjectionToSi(cardinalRep, trackRepNeg, fitTrack);
 			} else if ( _q < 0 ) {
 				studyProjectionToSi(cardinalRep, trackRepPos, fitTrack);
 			}
+
+			*/
 
 			
 

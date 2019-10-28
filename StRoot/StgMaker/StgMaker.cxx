@@ -43,8 +43,21 @@
 // For now, accept anything we are passed, no matter what it is or how bad it is
 template<typename T> bool accept( T ){ return true; }
 
-template<> bool accept( genfit::Track* track ) {
+template<> bool accept( genfit::Track* track ) {  
+
+  // This also gets rid of failed fits (but may need to explicitly
+  // for fit failure...)
   if (track->getNumPoints() <= 0 ) return false; // fit may have failed
+
+  // Fitted state at the first point
+  const auto& atFirstPoint = track->getFittedState();
+
+  TVector3 momentum = atFirstPoint.getMom();
+  double   pt = momentum.Perp();
+
+
+  if (pt < 0.05 ) return false; // below this 
+
   return true;
 };
 
@@ -293,52 +306,33 @@ int StgMaker::Make() {
   // Now fill StEvent
   FillEvent();
 
-#if 0
-  const auto& reco_tracks = mForwardTracker -> getRecoTracks();
-  const auto& fit_momenta = mForwardTracker -> getFitMomenta();
-  const auto& fit_status  = mForwardTracker -> getFitStatus();
-  const auto& global_reps = mForwardTracker -> globalTrackReps();
-  const auto& global_tracks = mForwardTracker -> globalTracks();
+  // Now loop over the tracks and do printout
+  int nnodes = event->trackNodes().size();
+  for ( int i=0;i<nnodes; i++ ) {
 
-  assert ( reco_tracks.size() == fit_momenta.size() );
-  assert ( reco_tracks.size() == fit_status.size() );
-
-  int tcount = 0;
-  for ( auto seed : reco_tracks ) {
-
-    const TVector3&          fitmom  = fit_momenta[tcount];
-    const genfit::FitStatus& fitstat = fit_status[tcount];
+    const StTrackNode* node = event->trackNodes()[i];
+    StGlobalTrack* track = (StGlobalTrack*)node->track(global);
+    StTrackGeometry* geometry = track->geometry();
     
-    LOG_INFO << "------------------------------------------------------------" << endm;
-    LOG_INFO << "Reconstructed track " << tcount << endm;
-    LOG_INFO << "N hits = " << seed.size() << endm;
-    int hcount = 0;
-    for ( auto hit : seed ) {
-      KiTrack::FwdHit* fwdhit = (KiTrack::FwdHit*)hit;
-      LOG_INFO << "  hit " << hcount++ 
-	       << " track_id=" << fwdhit->_tid
-	       << " volume_id=" << fwdhit->_vid
-	       << endm;
-    }
-    LOG_INFO << "Momentum: " << fitmom[0] << " " << fitmom[1] << " " << fitmom[2] << " | pT=" << fitmom.Perp() << endm;
-    LOG_INFO << "Status: " << endm;
-    fitstat.Print();
-
-    // Get the global track rep
-    const auto* rep   = global_reps[tcount];
-    const auto* track = global_tracks[tcount];
-
-   
-    tcount++;
+    StThreeVectorF origin = geometry->origin();
+    StThreeVectorF momentum = geometry->momentum();
+    
+    LOG_INFO << "-------------------------------------------------------------------------------" << endm;
+    LOG_INFO << "Track # " << i << endm;
+    LOG_INFO << "inner: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endm;
+    
+    StDcaGeometry* dca = track->dcaGeometry();
+    origin = dca->origin();
+    momentum = dca->momentum();
+    LOG_INFO << "d c a: Track origin: " << origin << " momentum: " << momentum << " pt=" << momentum.perp() << " eta=" << momentum.pseudoRapidity() << endm;
+    
+    int idtruth = track->idTruth();
+    LOG_INFO << " idtruth = " << idtruth << endm;
+    auto mctrack = mcTrackMap[ idtruth ];
+    if ( mctrack ) 
+    LOG_INFO << "truth: pt=" << mctrack->_pt << " eta=" << mctrack->_eta << " phi=" << mctrack->_phi << " q=" << mctrack->_q << endm;
   }
-#endif
 
-  
-  // Get reco tracks, their momenta and fit status
-
-  
-
-  // TODO: Hang tracks on StEvent
 
   return kStOK;
 }
@@ -465,6 +459,8 @@ void StgMaker::FillTrack( StTrack*             otrack, genfit::Track* itrack, co
 
   // If the track is a global track, fill the DCA geometry
   if ( global == otrack->type() ) FillTrackDcaGeometry( otrack, itrack );
+
+
 
   //covM[k++] = M(0,5); covM[k++] = M(1,5); covM[k++] = M(2,5); covM[k++] = M(3,5); covM[k++] = M(4,5); covM[k++] = M(5,5);  
 }
@@ -662,7 +658,8 @@ void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* it
   genfit::MeasuredStateOnPlane measuredState = itrack->getFittedState(1);
 
   // Obtain the cardinal representation
-  genfit::AbsTrackRep* cardinal =  itrack->getCardinalRep();
+  genfit::AbsTrackRep* cardinal = itrack->getCardinalRep();
+  
 
   // We really don't want the overhead in the TVector3 ctor/dtor here
   static TVector3 xhat(1,0,0), yhat(0,1,0), Z(0,0,0);
