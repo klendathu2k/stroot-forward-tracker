@@ -56,7 +56,7 @@ template<> bool accept( genfit::Track* track ) {
   double   pt = momentum.Perp();
 
 
-  if (pt < 0.05 ) return false; // below this 
+  if (pt < 0.10 ) return false; // below this 
 
   return true;
 };
@@ -197,7 +197,7 @@ int StgMaker::Make() {
     if ( 0==track ) continue;
     int track_id = track->id;
     float pt2 = track->p[0]*track->p[0] + track->p[1]*track->p[1];
-    float pt = sqrt(pt2);
+    float pt = sqrt(pt2); 
     float eta = track->eta;
     float phi = atan2(track->p[1], track->p[0]); //track->phi;
     int   q   = track->charge;
@@ -239,7 +239,7 @@ int StgMaker::Make() {
     return kStErr;
   }
   int nstg = g2t_stg_hits->GetNRows();
-  LOG_INFO << "nstg = " << nstg << endm;
+  //  LOG_INFO << "nstg = " << nstg << endm;
   for ( int i=0;i<nstg;i++ ) {  
 
     g2t_fts_hit_st* git = (g2t_fts_hit_st*)g2t_stg_hits->At(i); if (0==git) continue; // geant hit
@@ -250,7 +250,7 @@ int StgMaker::Make() {
     float y         = git->x[1];
     float z         = git->x[2];
 
-    LOG_INFO << "track_id=" << track_id << " volume_id=" << volume_id << " plane_id=" << plane_id << " x/y/z " << x << "/" << y << "/" << z << endm;
+    //    LOG_INFO << "track_id=" << track_id << " volume_id=" << volume_id << " plane_id=" << plane_id << " x/y/z " << x << "/" << y << "/" << z << endm;
 
     KiTrack::FwdHit* hit = new KiTrack::FwdHit(count++, x, y, z, -plane_id, track_id, mcTrackMap[track_id] );
 
@@ -587,24 +587,28 @@ void StgMaker::FillTrackFitTraits( StTrack*             otrack, genfit::Track* i
   // there.  For primary track, point 0 should correspond to the vertex. 
   //
   // TODO: verify first point on primary tracks is the vertex.
-  if ( global == otrack->type() ) {
-      
-    // Obtain the cardinal representation
-    genfit::AbsTrackRep* cardinal =  itrack->getCardinalRep();
-    
-    // We really don't want the overhead in the TVector3 ctor/dtor here
-    static TVector3 xhat(1,0,0), yhat(0,1,0), Z(0,0,0);
-    
-    // Assign the z position
-    Z[2] = z_fst[0];
-    
-    // This is the plane for which we are evaluating the fit
-    const auto detectorPlane = genfit::SharedPlanePtr( new genfit::DetPlane(Z, xhat, yhat) );
-    
-    // Update the state to the given plane
-    cardinal->extrapolateToPlane( state, detectorPlane, false, true );
 
-  }
+
+  // ... fit traits will be evaluated at first point on track for now ...
+
+  // if ( global == otrack->type() ) {
+      
+  //   // Obtain the cardinal representation
+  //   genfit::AbsTrackRep* cardinal =  itrack->getCardinalRep();
+    
+  //   // We really don't want the overhead in the TVector3 ctor/dtor here
+  //   static TVector3 xhat(1,0,0), yhat(0,1,0), Z(0,0,0);
+    
+  //   // Assign the z position
+  //   Z[2] = z_fst[0];
+    
+  //   // This is the plane for which we are evaluating the fit
+  //   const auto detectorPlane = genfit::SharedPlanePtr( new genfit::DetPlane(Z, xhat, yhat) );
+    
+  //   // Update the state to the given plane
+  //   cardinal->extrapolateToPlane( state, detectorPlane, false, true );
+
+  // }
 
   // Grab the covariance matrix
   const auto& M = state.getCov();
@@ -618,11 +622,6 @@ void StgMaker::FillTrackFitTraits( StTrack*             otrack, genfit::Track* i
   covM[k++] = M(0,2); covM[k++] = M(1,2); covM[k++] = M(2,2);
   covM[k++] = M(0,3); covM[k++] = M(1,3); covM[k++] = M(2,3); covM[k++] = M(3,3);
   covM[k++] = M(0,4); covM[k++] = M(1,4); covM[k++] = M(2,4); covM[k++] = M(3,4); covM[k++] = M(4,4);
-
-  
-
-  
-  
 
   StTrackFitTraits fit_traits(g3id_pid_hypothesis,0,chi2,covM);
 
@@ -653,9 +652,12 @@ void StgMaker::FillTrackFitTraits( StTrack*             otrack, genfit::Track* i
 //________________________________________________________________________
 void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* itrack, double zplane, int io ) {
 
-  
+  int ipoint = 0;
+  if ( io==kInnerGeometry ) ipoint=0; // hardcoded to sTGC only for now
+  else                      ipoint=3;
+
   // Obtain fitted state 
-  genfit::MeasuredStateOnPlane measuredState = itrack->getFittedState(1);
+  genfit::MeasuredStateOnPlane measuredState = itrack->getFittedState(ipoint);
 
   // Obtain the cardinal representation
   genfit::AbsTrackRep* cardinal = itrack->getCardinalRep();
@@ -671,7 +673,16 @@ void StgMaker::FillTrackGeometry( StTrack*             otrack, genfit::Track* it
   const auto detectorPlane = genfit::SharedPlanePtr( new genfit::DetPlane(Z, xhat, yhat) );
 
   // Update the state to the given plane
-  cardinal->extrapolateToPlane( measuredState, detectorPlane, false, true );
+  try { 
+    cardinal->extrapolateToPlane( measuredState, detectorPlane, false, true );
+  } 
+  catch ( genfit::Exception& e ) {
+    std::cerr << e.what() << std::endl;
+    std::cerr << "Extraploation to inner/outer geometry point failed" << endl;
+    //    assert(0);
+    // extrapolation failed
+    return;
+  }
 
   //  measuredState.Print();
 
@@ -735,7 +746,7 @@ void StgMaker::FillTrackDcaGeometry( StTrack*          otrack_, genfit::Track* i
   StGlobalTrack* otrack = dynamic_cast<StGlobalTrack*>(otrack_);
   if (0 == otrack) return; 
   
-  // Obtain fitted state 
+  // Obtain fitted state from genfit track
   genfit::MeasuredStateOnPlane measuredState = itrack->getFittedState(1);
 
   // Obtain the cardinal representation
@@ -744,21 +755,55 @@ void StgMaker::FillTrackDcaGeometry( StTrack*          otrack_, genfit::Track* i
   const TVector3 vertex(0.,0.,0.); // TODO get actual primary vertex
   const TVector3 direct(0.,0.,1.); // TODO get actual beamline slope
 
-  cardinal->extrapolateToLine(  measuredState, vertex, direct, false, true );
+  // Extrapolate the measured state to the DCA of the beamline
+  try {
+    cardinal->extrapolateToLine(  measuredState, vertex, direct, false, true );
+  }
+  catch ( genfit::Exception& e ) {
+    std::cerr << e.what() << std::endl;
+    std::cerr << "Extrapolation to beamline (DCA) failed." << std::endl;
+    assert(0);
+    return;
+  }
 
   static StThreeVector<double> momentum;
   static StThreeVector<double> origin;  
 
+  //
+  // These lines obtain the position, momentum and covariance matrix for the fit
+  // 
+
   static TVector3 pos;
   static TVector3 mom;
-  static TMatrixDSym cov;
 
-  measuredState.getPosMomCov(pos, mom, cov);
+  measuredState.getPosMom(pos, mom);
 
   for ( int i=0;i<3;i++ )  momentum[i] = mom[i];
   for ( int i=0;i<3; i++ ) origin[i]   = pos[i];
 
   double charge = measuredState.getCharge();
+
+  static TVectorD    state;
+  static TMatrixDSym cov;
+
+  //
+  // Should be the 5D state and covariance matrix 
+  //  https://arxiv.org/pdf/1902.04405.pdf
+  //  state = { q/p, u', v', u, v }, where
+  //  q/p is charge over momentum
+  //  u,  v correspond to x, y (I believe)
+  //  u', v' are the direction cosines with respect to the plane
+  //  ... presume that
+  //      u' = cos(thetaX)
+  //      v' = cos(thetaY)
+  //
+  state = measuredState.getState();
+  cov   = measuredState.getCov();
+
+
+  // Below is one way to convert the parameters to a helix, using the
+  // StPhysicalHelix class
+
 
 #if 1
   double eta    = momentum.pseudoRapidity();
