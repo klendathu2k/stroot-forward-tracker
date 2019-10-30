@@ -4,7 +4,7 @@ void testg( const char* filename=0 ) {
   if (filename) infile = filename;
 
   gROOT->LoadMacro("bfc.C");
-  bfc(0,"fzin agml debug makeevent stu sdt20181215 cmudst", infile );
+  bfc(0,"fzin agml debug sti makeevent stu sdt20181215 cmudst", infile );
   gSystem->Load("/star/simu/simu/jwebb/2019/10-09-2019-forward-tracker-integration/GenFit/lib/libgenfit2.so"); 
   gSystem->Load("StgUtil.so");
   gSystem->Load("StgMaker.so");
@@ -37,10 +37,19 @@ void testg( const char* filename=0 ) {
   // Do an ls to be sure
   chain->ls(3);
 
+  int count = 0;
 
   // Loop over all events in the file...
   int stat = 0; 
   while (stat==0) {
+
+    cout << "===============================================================================" << endl;
+    cout << "===============================================================================" << endl;
+    cout << endl << endl;
+    cout << "Processing event number " << count++ << endl << endl;
+    cout << "===============================================================================" << endl;
+    cout << "===============================================================================" << endl;
+
     chain->Clear();
     stat =    chain->Make(); 
     if (stat) break;
